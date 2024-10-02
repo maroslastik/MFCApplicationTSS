@@ -171,8 +171,24 @@ HCURSOR CMFCApplicationTSSDlg::OnQueryDragIcon()
 
 void CMFCApplicationTSSDlg::OnFileOpen32771()
 {
-	// tu budem pracovat
-	// TODO: Add your command handler code here
+	// Create a CFileDialog instance for opening files
+	CFileDialog fileDialog(TRUE, _T("bmp"), NULL,
+		OFN_HIDEREADONLY | OFN_FILEMUSTEXIST,
+		_T("Image Files (*.bmp;*.jpg;*.jpeg;*.png)|*.bmp;*.jpg;*.jpeg;*.png|All Files (*.*)|*.*||"));
+
+	// Open the file dialog and check if the user clicked "OK"
+	if (fileDialog.DoModal() == IDOK)
+	{
+		// Get the file path selected by the user
+		CString filePath = fileDialog.GetPathName();
+
+		// Do something with the file path, such as loading the image
+		AfxMessageBox(_T("Selected file: ") + filePath);
+
+		// You can now load the image using the path, for example using your Image class
+		// Image img((LPCTSTR)filePath);
+		// img.LoadImage();  // If you have such a method in your Image class
+	}
 }
 
 
