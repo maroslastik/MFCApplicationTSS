@@ -6,6 +6,9 @@
 #include "framework.h"
 #include "MFCApplicationTSS.h"
 #include "MFCApplicationTSSDlg.h"
+#include <gdiplus.h>
+
+using namespace Gdiplus;
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -52,6 +55,9 @@ BOOL CMFCApplicationTSSApp::InitInstance()
 
 	CWinApp::InitInstance();
 
+	GdiplusStartupInput gdiplusStartupInput;
+	ULONG_PTR gdiplusToken;
+	GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 
 	AfxEnableControlContainer();
 

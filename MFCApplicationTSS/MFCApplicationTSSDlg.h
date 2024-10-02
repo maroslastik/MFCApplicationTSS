@@ -4,6 +4,22 @@
 
 #pragma once
 
+enum
+{
+	WM_DRAW_IMAGE = WM_USER + 1,
+	WM_DRAW_HISTOGRAM
+};
+
+class CStaticImage : public CStatic
+{
+	void DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct) override;
+};
+
+class CStaticHistogram : public CStatic
+{
+	void DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct) override;
+};
+
 
 // CMFCApplicationTSSDlg dialog
 class CMFCApplicationTSSDlg : public CDialogEx
@@ -37,13 +53,16 @@ public:
 	CListCtrl m_fileList;
 	CRect m_rectFileList;
 
-	CStatic m_staticHistogram;
+	CStaticHistogram m_staticHistogram;
 	CRect m_rectStaticHistogram;
 
-	CStatic m_staticImage;
+	CStaticImage m_staticImage;
 	CRect m_rectStaticImage;
 	
 	afx_msg void OnFileOpen32771();
 	afx_msg void OnFileClose32772();
 	afx_msg void OnSize(UINT nType, int cx, int cy);
+
+	afx_msg LRESULT OnDrawImage(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnDrawHistogram(WPARAM wParam, LPARAM lParam);
 };

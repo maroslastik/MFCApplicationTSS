@@ -43,12 +43,13 @@ void CAboutDlg::DoDataExchange(CDataExchange* pDX)
 }
 
 BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
+	ON_WM_SYSCOMMAND()
+	ON_WM_PAINT()
+	ON_WM_QUERYDRAGICON()
 END_MESSAGE_MAP()
 
 
 // CMFCApplicationTSSDlg dialog
-
-
 
 CMFCApplicationTSSDlg::CMFCApplicationTSSDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_MFCAPPLICATIONTSS_DIALOG, pParent)
@@ -68,6 +69,8 @@ BEGIN_MESSAGE_MAP(CMFCApplicationTSSDlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
+	ON_MESSAGE(WM_DRAW_IMAGE, OnDrawImage)
+	ON_MESSAGE(WM_DRAW_HISTOGRAM, OnDrawHistogram)
 	ON_COMMAND(ID_FILE_OPEN32771, &CMFCApplicationTSSDlg::OnFileOpen32771)
 	ON_COMMAND(ID_FILE_CLOSE32772, &CMFCApplicationTSSDlg::OnFileClose32772)
 	ON_WM_SIZE()
@@ -168,6 +171,7 @@ HCURSOR CMFCApplicationTSSDlg::OnQueryDragIcon()
 
 void CMFCApplicationTSSDlg::OnFileOpen32771()
 {
+
 	// TODO: Add your command handler code here
 }
 
@@ -205,8 +209,29 @@ void CMFCApplicationTSSDlg::OnSize(UINT nType, int cx, int cy)
 		int newImageWidth = cx - m_rectFileList.Width() - 20;
 		m_staticImage.SetWindowPos(NULL, m_rectFileList.right, m_rectStaticImage.top, newImageWidth, newFileListHeight + m_rectStaticHistogram.Height(), SWP_NOZORDER);
 	}
-	// pouziem funkciu setwindowspos - nastavuje poziciu cophosi
-	// getwindowrect ziska aktualnu hodnotu okna
-
+	
 	// TODO: Add your message handler code here
+}
+
+LRESULT CMFCApplicationTSSDlg::OnDrawImage(WPARAM wParam, LPARAM lParam)
+{
+	LPDRAWITEMSTRUCT st = (LPDRAWITEMSTRUCT)wParam;
+	auto gr = Gdiplus::Graphics::FromHDC(st->hDC);
+	//gr->DrawImage();
+	//gr->DrawHistogram();
+	return S_OK;
+}
+
+LRESULT CMFCApplicationTSSDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
+{
+	return S_OK;
+}
+
+void CStaticImage::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
+{
+	GetParent()->SendMessage(WM_DRAW_IMAGE, (WPARAM)lpDrawItemStruct);
+}
+
+void CStaticHistogram::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
+{
 }
