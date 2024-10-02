@@ -171,13 +171,14 @@ HCURSOR CMFCApplicationTSSDlg::OnQueryDragIcon()
 
 void CMFCApplicationTSSDlg::OnFileOpen32771()
 {
-
+	// tu budem pracovat
 	// TODO: Add your command handler code here
 }
 
 
 void CMFCApplicationTSSDlg::OnFileClose32772()
 {
+	// tu budem pracovat
 	// TODO: Add your command handler code here
 }
 
