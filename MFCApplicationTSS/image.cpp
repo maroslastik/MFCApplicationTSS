@@ -1,32 +1,34 @@
-#include "Image.h"
+#include "image.h"
 #include <algorithm> // For std::find
 #include <windows.h> // For handling BITMAP structures
 #include <sstream>
 
 // Constructor to initialize the image object
-Image::Image(const std::string& filePath) : filePath(filePath), fileName(ExtractFileName(filePath)) 
+IMAGE::IMAGE(const CString& filePath)
 {
+    // Assign the passed file path to the class's filePath member variable
+    this->filePath = filePath;
 
+    // Call ExtractFileName to extract the file name from the file path
+    this->fileName = ExtractFileName(filePath);
 }
 
 // Getter methods
-const std::string& Image::GetPath() const 
+const CString& IMAGE::GetPath() const
 {
     return filePath;
 }
 
-const std::string& Image::GetFileName() const 
+const CString& IMAGE::GetFileName() const
 {
     return fileName;
 }
 
 // Helper method to extract file name from the file path
-std::string Image::ExtractFileName(const std::string& path) const 
-{
-    size_t pos = path.find_last_of("/\\");
-    if (pos != std::string::npos) 
-    {
-        return path.substr(pos + 1);
+CString IMAGE::ExtractFileName(const CString& path) const {
+    int pos = path.ReverseFind(_T('\\'));
+    if (pos != -1) {
+        return path.Mid(pos + 1);  // Extract file name after the last '\'
     }
-    return path; 
+    return path;  // If no backslash, the path itself is the file name
 }

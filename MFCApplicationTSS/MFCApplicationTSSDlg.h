@@ -3,6 +3,13 @@
 //
 
 #pragma once
+#include <vector>
+
+struct IMAGE 
+{
+	CString path;
+	CString name;   
+};
 
 enum
 {
@@ -24,20 +31,20 @@ class CStaticHistogram : public CStatic
 // CMFCApplicationTSSDlg dialog
 class CMFCApplicationTSSDlg : public CDialogEx
 {
-// Construction
+	// Construction
 public:
 	CMFCApplicationTSSDlg(CWnd* pParent = nullptr);	// standard constructor
 
-// Dialog Data
+	// Dialog Data
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_MFCAPPLICATIONTSS_DIALOG };
 #endif
 
-	protected:
+protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
 
 
-// Implementation
+	// Implementation
 protected:
 	HICON m_hIcon;
 
@@ -58,11 +65,16 @@ public:
 
 	CStaticImage m_staticImage;
 	CRect m_rectStaticImage;
-	
+
+	std::vector<IMAGE> ImageVector;
+
 	afx_msg void OnFileOpen32771();
 	afx_msg void OnFileClose32772();
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 
 	afx_msg LRESULT OnDrawImage(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnDrawHistogram(WPARAM wParam, LPARAM lParam);
+
+	// helper functions
+	bool IsDuplicate(const IMAGE& img) const;
 };

@@ -2,21 +2,22 @@
 #include <string>
 #include <vector>
 #include <windows.h> 
+#include <afxstr.h> 
 
-class Image {
+class IMAGE {
 public:
     // Constructor
-    Image(const std::string& filePath);
+    IMAGE(const CString& filePath);
 
     // Getter methods
-    const std::string& GetPath() const;
-    const std::string& GetFileName() const;
-    
+    const CString& GetPath() const { return filePath; }
+    const CString& GetFileName() const { return fileName; }
+
 private:
-    // Data members
-    std::string filePath;     // Full path to the image file
-    std::string fileName;     // Extracted file name
-    
-    // Helper method to extract filename from file path
-    std::string ExtractFileName(const std::string& path) const;
+    // Data members (use CString, not CString&)
+    CString filePath;     // Full path to the image file
+    CString fileName;     // Extracted file name
+
+    // Helper method to extract the filename from the file path
+    CString ExtractFileName(const CString& path) const;
 };

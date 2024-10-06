@@ -20,15 +20,15 @@ class CAboutDlg : public CDialogEx
 public:
 	CAboutDlg();
 
-// Dialog Data
+	// Dialog Data
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_ABOUTBOX };
 #endif
 
-	protected:
+protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 
-// Implementation
+	// Implementation
 protected:
 	DECLARE_MESSAGE_MAP()
 };
@@ -171,31 +171,46 @@ HCURSOR CMFCApplicationTSSDlg::OnQueryDragIcon()
 
 void CMFCApplicationTSSDlg::OnFileOpen32771()
 {
-	// Create a CFileDialog instance for opening files
 	CFileDialog fileDialog(TRUE, _T("bmp"), NULL,
-		OFN_HIDEREADONLY | OFN_FILEMUSTEXIST,
+		OFN_HIDEREADONLY | OFN_FILEMUSTEXIST | OFN_ALLOWMULTISELECT,
 		_T("Image Files (*.bmp;*.jpg;*.jpeg;*.png)|*.bmp;*.jpg;*.jpeg;*.png|All Files (*.*)|*.*||"));
 
-	// Open the file dialog and check if the user clicked "OK"
+
 	if (fileDialog.DoModal() == IDOK)
 	{
-		// Get the file path selected by the user
-		CString filePath = fileDialog.GetPathName();
+		POSITION pos = fileDialog.GetStartPosition();
+		while (pos != NULL)
+		{
+			// Get the path of each selected file
+			CString filePath = fileDialog.GetNextPathName(pos);
 
-		// Do something with the file path, such as loading the image
-		AfxMessageBox(_T("Selected file: ") + filePath);
+			// Create an Image structure and set the values
+			IMAGE img;
+			img.path = filePath; // Store full path
 
-		// You can now load the image using the path, for example using your Image class
-		// Image img((LPCTSTR)filePath);
-		// img.LoadImage();  // If you have such a method in your Image class
+			int pos = max(filePath.ReverseFind(_T('\\')), filePath.ReverseFind(_T('/')));
+			if (pos != -1)
+				img.name = filePath.Mid(pos + 1);
+			else
+				img.name = filePath;
+
+			if (!IsDuplicate(img))
+			{
+				ImageVector.push_back(img); // Append to the vector
+				m_fileList.InsertItem(m_fileList.GetItemCount(), img.name); // Add the file name to the list control
+			}
+			else 
+			{
+				AfxMessageBox(_T("Duplicate file not added: ") + img.name);
+			}
+		}
 	}
 }
 
 
 void CMFCApplicationTSSDlg::OnFileClose32772()
 {
-	// tu budem pracovat
-	// TODO: Add your command handler code here
+	
 }
 
 
@@ -226,7 +241,7 @@ void CMFCApplicationTSSDlg::OnSize(UINT nType, int cx, int cy)
 		int newImageWidth = cx - m_rectFileList.Width() - 20;
 		m_staticImage.SetWindowPos(NULL, m_rectFileList.right, m_rectStaticImage.top, newImageWidth, newFileListHeight + m_rectStaticHistogram.Height(), SWP_NOZORDER);
 	}
-	
+
 	// TODO: Add your message handler code here
 }
 
@@ -242,6 +257,21 @@ LRESULT CMFCApplicationTSSDlg::OnDrawImage(WPARAM wParam, LPARAM lParam)
 LRESULT CMFCApplicationTSSDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
 {
 	return S_OK;
+}
+
+bool CMFCApplicationTSSDlg::IsDuplicate(const IMAGE& img) const
+{
+	for (const auto& existingImg : ImageVector) 
+	{
+		if (existingImg.name == img.name) 
+		{ 
+			if (existingImg.path == img.path) 
+			{ 
+				return true; 
+			}
+		}
+	}
+	return false;
 }
 
 void CStaticImage::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
