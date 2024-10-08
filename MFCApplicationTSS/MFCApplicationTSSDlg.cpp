@@ -167,8 +167,6 @@ HCURSOR CMFCApplicationTSSDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-
-
 void CMFCApplicationTSSDlg::OnFileOpen32771()
 {
 	CFileDialog fileDialog(TRUE, _T("bmp"), NULL,
@@ -181,12 +179,10 @@ void CMFCApplicationTSSDlg::OnFileOpen32771()
 		POSITION pos = fileDialog.GetStartPosition();
 		while (pos != NULL)
 		{
-			// Get the path of each selected file
 			CString filePath = fileDialog.GetNextPathName(pos);
 
-			// Create an Image structure and set the values
 			IMAGE img;
-			img.path = filePath; // Store full path
+			img.path = filePath; 
 
 			int pos = max(filePath.ReverseFind(_T('\\')), filePath.ReverseFind(_T('/')));
 			if (pos != -1)
@@ -196,8 +192,8 @@ void CMFCApplicationTSSDlg::OnFileOpen32771()
 
 			if (!IsDuplicate(img))
 			{
-				ImageVector.push_back(img); // Append to the vector
-				m_fileList.InsertItem(m_fileList.GetItemCount(), img.name); // Add the file name to the list control
+				ImageVector.push_back(img);
+				m_fileList.InsertItem(m_fileList.GetItemCount(), img.name);
 			}
 			else 
 			{
@@ -207,12 +203,34 @@ void CMFCApplicationTSSDlg::OnFileOpen32771()
 	}
 }
 
-
 void CMFCApplicationTSSDlg::OnFileClose32772()
 {
-	
-}
+	int selectedIndex = m_fileList.GetSelectionMark();  
 
+	if (selectedIndex == -1) 
+	{
+		AfxMessageBox(_T("No file selected to remove."));
+		return;
+	}
+
+	CString fileNameToRemove = m_fileList.GetItemText(selectedIndex, 0);
+
+	if (AfxMessageBox(_T("Are you sure you want to remove this file?"), MB_OKCANCEL | MB_ICONQUESTION) == IDOK) 
+	{
+		for (auto it = ImageVector.begin(); it != ImageVector.end(); ++it) 
+		{
+			if (it->name == fileNameToRemove) 
+			{
+				ImageVector.erase(it); 
+				break;
+			}
+		}
+
+		m_fileList.DeleteItem(selectedIndex);
+
+		AfxMessageBox(_T("File removed successfully."), MB_OK | MB_ICONINFORMATION);
+	}
+}
 
 void CMFCApplicationTSSDlg::OnSize(UINT nType, int cx, int cy)
 {
