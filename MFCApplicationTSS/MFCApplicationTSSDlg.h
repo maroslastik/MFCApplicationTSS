@@ -9,6 +9,7 @@ struct IMAGE
 {
 	CString path;
 	CString name;   
+	Gdiplus::Image* gdiImage;
 };
 
 enum
@@ -19,6 +20,8 @@ enum
 
 class CStaticImage : public CStatic
 {
+public:
+	Gdiplus::Image* m_gdiImage = nullptr;
 	void DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct) override;
 };
 
@@ -70,6 +73,7 @@ public:
 
 	afx_msg void OnFileOpen32771();
 	afx_msg void OnFileClose32772();
+	afx_msg void OnLvnItemchangedFileList(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 
 	afx_msg LRESULT OnDrawImage(WPARAM wParam, LPARAM lParam);
@@ -77,4 +81,5 @@ public:
 
 	// helper functions
 	bool IsDuplicate(const IMAGE& img) const;
+	
 };

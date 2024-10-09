@@ -74,6 +74,7 @@ BEGIN_MESSAGE_MAP(CMFCApplicationTSSDlg, CDialogEx)
 	ON_COMMAND(ID_FILE_OPEN32771, &CMFCApplicationTSSDlg::OnFileOpen32771)
 	ON_COMMAND(ID_FILE_CLOSE32772, &CMFCApplicationTSSDlg::OnFileClose32772)
 	ON_WM_SIZE()
+	ON_NOTIFY(LVN_ITEMCHANGED, IDC_FILE_LIST, &CMFCApplicationTSSDlg::OnLvnItemchangedFileList)
 END_MESSAGE_MAP()
 
 
@@ -192,8 +193,18 @@ void CMFCApplicationTSSDlg::OnFileOpen32771()
 
 			if (!IsDuplicate(img))
 			{
-				ImageVector.push_back(img);
-				m_fileList.InsertItem(m_fileList.GetItemCount(), img.name);
+				img.gdiImage = Gdiplus::Image::FromFile(img.path);
+				if (img.gdiImage != nullptr && img.gdiImage->GetLastStatus() == Gdiplus::Ok)
+				{
+					ImageVector.push_back(img);
+					m_fileList.InsertItem(m_fileList.GetItemCount(), img.name);
+				}
+				else
+				{
+					AfxMessageBox(_T("Failed to load image: ") + img.name);
+					delete img.gdiImage;
+					img.gdiImage = nullptr;
+				}
 			}
 			else 
 			{
@@ -263,6 +274,8 @@ void CMFCApplicationTSSDlg::OnSize(UINT nType, int cx, int cy)
 	// TODO: Add your message handler code here
 }
 
+
+
 LRESULT CMFCApplicationTSSDlg::OnDrawImage(WPARAM wParam, LPARAM lParam)
 {
 	LPDRAWITEMSTRUCT st = (LPDRAWITEMSTRUCT)wParam;
@@ -295,8 +308,42 @@ bool CMFCApplicationTSSDlg::IsDuplicate(const IMAGE& img) const
 void CStaticImage::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 {
 	GetParent()->SendMessage(WM_DRAW_IMAGE, (WPARAM)lpDrawItemStruct);
+	if (m_gdiImage != nullptr)
+	{
+		CDC* pDC = CDC::FromHandle(lpDrawItemStruct->hDC);
+		Gdiplus::Graphics graphics(pDC->m_hDC);
+
+		CRect rect = lpDrawItemStruct->rcItem;
+
+		Gdiplus::SolidBrush brush(Gdiplus::Color(255, 255, 255));
+		graphics.FillRectangle(&brush, rect.left, rect.top, rect.Width(), rect.Height());
+
+		graphics.DrawImage(m_gdiImage, rect.left, rect.top, rect.Width(), rect.Height());
+	}
 }
 
 void CStaticHistogram::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 {
+}
+
+
+
+void CMFCApplicationTSSDlg::OnLvnItemchangedFileList(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
+
+	if ((pNMLV->uChanged & LVIF_STATE) && (pNMLV->uNewState & LVIS_SELECTED))
+	{
+		int nItem = pNMLV->iItem;
+		if (nItem >= 0 && nItem < ImageVector.size())
+		{
+			IMAGE& img = ImageVector[nItem];
+
+			m_staticImage.m_gdiImage = img.gdiImage;
+
+			m_staticImage.Invalidate();
+			m_staticImage.UpdateWindow();
+		}
+	}
+	*pResult = 0;
 }
