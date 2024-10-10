@@ -239,6 +239,23 @@ void CMFCApplicationTSSDlg::OnFileClose32772()
 
 		m_fileList.DeleteItem(selectedIndex);
 
+		if (!ImageVector.empty())
+		{
+			m_staticImage.m_gdiImage = ImageVector[0].gdiImage; 
+			m_staticImage.Invalidate();
+			m_staticImage.UpdateWindow();
+
+			m_fileList.SetItemState(0, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
+			m_fileList.EnsureVisible(0, FALSE);
+
+		}
+		else
+		{
+			m_staticImage.m_gdiImage = nullptr; 
+			m_staticImage.Invalidate();
+			m_staticImage.UpdateWindow(); 
+		}
+
 		AfxMessageBox(_T("File removed successfully."), MB_OK | MB_ICONINFORMATION);
 	}
 }
@@ -255,7 +272,7 @@ void CMFCApplicationTSSDlg::OnSize(UINT nType, int cx, int cy)
 		// histogram
 		m_staticHistogram.GetWindowRect(&m_rectStaticHistogram);
 		ScreenToClient(&m_rectStaticHistogram);
-		int histogramTop = cy - m_rectStaticHistogram.Height() - 10;
+		int histogramTop = cy - m_rectStaticHistogram.Height();
 		m_staticHistogram.SetWindowPos(NULL, m_rectStaticHistogram.left, histogramTop, m_rectStaticHistogram.Width(), m_rectStaticHistogram.Height(), SWP_NOZORDER);
 
 		// file list
@@ -267,21 +284,45 @@ void CMFCApplicationTSSDlg::OnSize(UINT nType, int cx, int cy)
 		// image
 		m_staticImage.GetWindowRect(&m_rectStaticImage);
 		ScreenToClient(&m_rectStaticImage);
-		int newImageWidth = cx - m_rectFileList.Width() - 20;
+		int newImageWidth = cx - m_rectFileList.Width();
 		m_staticImage.SetWindowPos(NULL, m_rectFileList.right, m_rectStaticImage.top, newImageWidth, newFileListHeight + m_rectStaticHistogram.Height(), SWP_NOZORDER);
+
+		m_staticImage.Invalidate();
+		m_staticImage.UpdateWindow();
 	}
-
-	// TODO: Add your message handler code here
 }
-
-
 
 LRESULT CMFCApplicationTSSDlg::OnDrawImage(WPARAM wParam, LPARAM lParam)
 {
-	LPDRAWITEMSTRUCT st = (LPDRAWITEMSTRUCT)wParam;
-	auto gr = Gdiplus::Graphics::FromHDC(st->hDC);
-	//gr->DrawImage();
-	//gr->DrawHistogram();
+	LPDRAWITEMSTRUCT pDIS = (LPDRAWITEMSTRUCT)wParam;
+
+	Gdiplus::Graphics graphics(pDIS->hDC);
+
+	if (ImageVector.empty() || m_staticImage.m_gdiImage == nullptr)
+	{
+		CRect rect = pDIS->rcItem;
+		Gdiplus::SolidBrush backgroundBrush(Gdiplus::Color(255, 255, 255));
+		graphics.FillRectangle(&backgroundBrush, rect.left, rect.top, rect.Width(), rect.Height());
+	}
+	else
+	{
+		// Get the dimensions of the image
+		UINT imageWidth = m_staticImage.m_gdiImage->GetWidth();
+		UINT imageHeight = m_staticImage.m_gdiImage->GetHeight();
+
+		// Calculate centered position
+		CRect rect = pDIS->rcItem;
+		int imageX = rect.left + (rect.Width() - imageWidth) / 2; // Center horizontally
+		int imageY = rect.top + (rect.Height() - imageHeight) / 2; // Center vertically
+
+		// Clear the canvas
+		Gdiplus::SolidBrush backgroundBrush(Gdiplus::Color(255, 255, 255)); // White background
+		graphics.FillRectangle(&backgroundBrush, rect.left, rect.top, rect.Width(), rect.Height());
+
+		// Draw the image
+		graphics.DrawImage(m_staticImage.m_gdiImage, imageX, imageY, imageWidth, imageHeight);
+	}
+
 	return S_OK;
 }
 
@@ -308,25 +349,11 @@ bool CMFCApplicationTSSDlg::IsDuplicate(const IMAGE& img) const
 void CStaticImage::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 {
 	GetParent()->SendMessage(WM_DRAW_IMAGE, (WPARAM)lpDrawItemStruct);
-	if (m_gdiImage != nullptr)
-	{
-		CDC* pDC = CDC::FromHandle(lpDrawItemStruct->hDC);
-		Gdiplus::Graphics graphics(pDC->m_hDC);
-
-		CRect rect = lpDrawItemStruct->rcItem;
-
-		Gdiplus::SolidBrush brush(Gdiplus::Color(255, 255, 255));
-		graphics.FillRectangle(&brush, rect.left, rect.top, rect.Width(), rect.Height());
-
-		graphics.DrawImage(m_gdiImage, rect.left, rect.top, rect.Width(), rect.Height());
-	}
 }
 
 void CStaticHistogram::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 {
 }
-
-
 
 void CMFCApplicationTSSDlg::OnLvnItemchangedFileList(NMHDR* pNMHDR, LRESULT* pResult)
 {
