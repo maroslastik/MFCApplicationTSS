@@ -306,21 +306,25 @@ LRESULT CMFCApplicationTSSDlg::OnDrawImage(WPARAM wParam, LPARAM lParam)
 	}
 	else
 	{
-		// Get the dimensions of the image
 		UINT imageWidth = m_staticImage.m_gdiImage->GetWidth();
 		UINT imageHeight = m_staticImage.m_gdiImage->GetHeight();
 
-		// Calculate centered position
 		CRect rect = pDIS->rcItem;
-		int imageX = rect.left + (rect.Width() - imageWidth) / 2; // Center horizontally
-		int imageY = rect.top + (rect.Height() - imageHeight) / 2; // Center vertically
 
-		// Clear the canvas
-		Gdiplus::SolidBrush backgroundBrush(Gdiplus::Color(255, 255, 255)); // White background
+		float scaleX = static_cast<float>(rect.Width()) / imageWidth;
+		float scaleY = static_cast<float>(rect.Height()) / imageHeight;
+		float scale = min(scaleX, scaleY); 
+
+		int scaledWidth = static_cast<int>(imageWidth * scale);
+		int scaledHeight = static_cast<int>(imageHeight * scale);
+
+		int imageX = rect.left + (rect.Width() - scaledWidth) / 2;  
+		int imageY = rect.top + (rect.Height() - scaledHeight) / 2;
+
+		Gdiplus::SolidBrush backgroundBrush(Gdiplus::Color(255, 255, 255)); 
 		graphics.FillRectangle(&backgroundBrush, rect.left, rect.top, rect.Width(), rect.Height());
 
-		// Draw the image
-		graphics.DrawImage(m_staticImage.m_gdiImage, imageX, imageY, imageWidth, imageHeight);
+		graphics.DrawImage(m_staticImage.m_gdiImage, imageX, imageY, scaledWidth, scaledHeight);
 	}
 
 	return S_OK;

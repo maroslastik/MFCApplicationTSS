@@ -34,24 +34,20 @@ class CStaticHistogram : public CStatic
 // CMFCApplicationTSSDlg dialog
 class CMFCApplicationTSSDlg : public CDialogEx
 {
-	// Construction
 public:
-	CMFCApplicationTSSDlg(CWnd* pParent = nullptr);	// standard constructor
+	CMFCApplicationTSSDlg(CWnd* pParent = nullptr);	
 
-	// Dialog Data
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_MFCAPPLICATIONTSS_DIALOG };
 #endif
 
 protected:
-	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
+	virtual void DoDataExchange(CDataExchange* pDX);
 
 
-	// Implementation
 protected:
 	HICON m_hIcon;
 
-	// Generated message map functions
 	virtual BOOL OnInitDialog();
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
 	afx_msg void OnPaint();
