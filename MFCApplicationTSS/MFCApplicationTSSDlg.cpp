@@ -196,7 +196,7 @@ void CMFCApplicationTSSDlg::OnFileOpen32771()
 				img.gdiImage = Gdiplus::Image::FromFile(img.path);
 				if (img.gdiImage != nullptr && img.gdiImage->GetLastStatus() == Gdiplus::Ok)
 				{
-					ImageVector.push_back(img);
+					m_ImageVector.push_back(img);
 					m_fileList.InsertItem(m_fileList.GetItemCount(), img.name);
 				}
 				else
@@ -228,20 +228,20 @@ void CMFCApplicationTSSDlg::OnFileClose32772()
 
 	if (AfxMessageBox(_T("Are you sure you want to remove this file?"), MB_OKCANCEL | MB_ICONQUESTION) == IDOK) 
 	{
-		for (auto it = ImageVector.begin(); it != ImageVector.end(); ++it) 
+		for (auto it = m_ImageVector.begin(); it != m_ImageVector.end(); ++it) 
 		{
 			if (it->name == fileNameToRemove) 
 			{
-				ImageVector.erase(it); 
+				m_ImageVector.erase(it); 
 				break;
 			}
 		}
 
 		m_fileList.DeleteItem(selectedIndex);
 
-		if (!ImageVector.empty())
+		if (!m_ImageVector.empty())
 		{
-			m_staticImage.m_gdiImage = ImageVector[0].gdiImage; 
+			m_staticImage.m_gdiImage = m_ImageVector[0].gdiImage; 
 			m_staticImage.Invalidate();
 			m_staticImage.UpdateWindow();
 
@@ -298,7 +298,7 @@ LRESULT CMFCApplicationTSSDlg::OnDrawImage(WPARAM wParam, LPARAM lParam)
 
 	Gdiplus::Graphics graphics(pDIS->hDC);
 
-	if (ImageVector.empty() || m_staticImage.m_gdiImage == nullptr)
+	if (m_ImageVector.empty() || m_staticImage.m_gdiImage == nullptr)
 	{
 		CRect rect = pDIS->rcItem;
 		Gdiplus::SolidBrush backgroundBrush(Gdiplus::Color(255, 255, 255));
@@ -337,7 +337,7 @@ LRESULT CMFCApplicationTSSDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
 
 bool CMFCApplicationTSSDlg::IsDuplicate(const IMAGE& img) const
 {
-	for (const auto& existingImg : ImageVector) 
+	for (const auto& existingImg : m_ImageVector) 
 	{
 		if (existingImg.name == img.name) 
 		{ 
@@ -366,9 +366,9 @@ void CMFCApplicationTSSDlg::OnLvnItemchangedFileList(NMHDR* pNMHDR, LRESULT* pRe
 	if ((pNMLV->uChanged & LVIF_STATE) && (pNMLV->uNewState & LVIS_SELECTED))
 	{
 		int nItem = pNMLV->iItem;
-		if (nItem >= 0 && nItem < ImageVector.size())
+		if (nItem >= 0 && nItem < m_ImageVector.size())
 		{
-			IMAGE& img = ImageVector[nItem];
+			IMAGE& img = m_ImageVector[nItem];
 
 			m_staticImage.m_gdiImage = img.gdiImage;
 

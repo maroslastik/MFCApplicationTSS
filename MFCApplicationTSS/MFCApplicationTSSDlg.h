@@ -65,7 +65,7 @@ public:
 	CStaticImage m_staticImage;
 	CRect m_rectStaticImage;
 
-	std::vector<IMAGE> ImageVector;
+	std::vector<IMAGE> m_ImageVector;
 
 	afx_msg void OnFileOpen32771();
 	afx_msg void OnFileClose32772();
