@@ -75,6 +75,9 @@ BEGIN_MESSAGE_MAP(CMFCApplicationTSSDlg, CDialogEx)
 	ON_COMMAND(ID_FILE_CLOSE32772, &CMFCApplicationTSSDlg::OnFileClose32772)
 	ON_WM_SIZE()
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_FILE_LIST, &CMFCApplicationTSSDlg::OnLvnItemchangedFileList)
+	ON_COMMAND(ID_HISTOGRAM_R, &CMFCApplicationTSSDlg::OnHistogramR)
+	ON_COMMAND(ID_HISTOGRAM_G, &CMFCApplicationTSSDlg::OnHistogramG)
+	ON_COMMAND(ID_HISTOGRAM_B, &CMFCApplicationTSSDlg::OnHistogramB)
 END_MESSAGE_MAP()
 
 
@@ -110,6 +113,16 @@ BOOL CMFCApplicationTSSDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 
 	// TODO: Add extra initialization here
+	
+	// histogram initialization
+	// 0 for R, 1 for G, 2 for B, -1 for none
+	m_selectedColor = -1; 
+	CheckMenuRadioItem(
+		GetMenu()->m_hMenu,
+		ID_HISTOGRAM_R,
+		ID_HISTOGRAM_G,
+		ID_HISTOGRAM_B,
+		MF_BYCOMMAND);
 
 	GetWindowRect(&m_rect);
 	m_fileList.GetWindowRect(&m_rectFileList);
@@ -377,4 +390,83 @@ void CMFCApplicationTSSDlg::OnLvnItemchangedFileList(NMHDR* pNMHDR, LRESULT* pRe
 		}
 	}
 	*pResult = 0;
+}
+
+void CMFCApplicationTSSDlg::OnHistogramR()
+{
+	CMenu* pMenu = GetMenu();
+	if (pMenu)
+	{
+		CMenu* pHistogramMenu = pMenu->GetSubMenu(1); 
+
+		// if button checked, else unchecked
+		if (pHistogramMenu->GetMenuState(ID_HISTOGRAM_R, MF_BYCOMMAND) & MF_CHECKED)
+		{
+			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_R, MF_UNCHECKED);
+			m_selectedColor = -1;
+		}
+		else
+		{
+			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_R, MF_CHECKED);
+			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_G, MF_UNCHECKED);
+			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_B, MF_UNCHECKED);
+
+			m_selectedColor = 0;
+		}
+	}
+	CString message;
+	message.Format(_T("%d"), m_selectedColor);
+	AfxMessageBox(message);
+}
+
+void CMFCApplicationTSSDlg::OnHistogramG()
+{
+	CMenu* pMenu = GetMenu();
+	if (pMenu)
+	{
+		CMenu* pHistogramMenu = pMenu->GetSubMenu(1);
+
+		if (pHistogramMenu->GetMenuState(ID_HISTOGRAM_G, MF_BYCOMMAND) & MF_CHECKED)
+		{
+			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_G, MF_UNCHECKED);
+			m_selectedColor = -1;
+		}
+		else
+		{
+			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_G, MF_CHECKED);
+			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_R, MF_UNCHECKED);
+			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_B, MF_UNCHECKED);
+
+			m_selectedColor = 1;
+		}
+	}
+	CString message;
+	message.Format(_T("%d"), m_selectedColor);
+	AfxMessageBox(message);
+}
+
+void CMFCApplicationTSSDlg::OnHistogramB()
+{
+	CMenu* pMenu = GetMenu();
+	if (pMenu)
+	{
+		CMenu* pHistogramMenu = pMenu->GetSubMenu(1);
+
+		if (pHistogramMenu->GetMenuState(ID_HISTOGRAM_B, MF_BYCOMMAND) & MF_CHECKED)
+		{
+			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_B, MF_UNCHECKED);
+			m_selectedColor = -1;
+		}
+		else
+		{
+			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_B, MF_CHECKED);
+			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_R, MF_UNCHECKED);
+			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_G, MF_UNCHECKED);
+
+			m_selectedColor = 2;
+		}
+	}
+	CString message;
+	message.Format(_T("%d"), m_selectedColor);
+	AfxMessageBox(message);
 }

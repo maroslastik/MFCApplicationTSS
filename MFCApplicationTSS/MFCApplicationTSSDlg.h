@@ -4,12 +4,17 @@
 
 #pragma once
 #include <vector>
+#include <array>
 
 struct IMAGE 
 {
 	CString path;
 	CString name;   
 	Gdiplus::Image* gdiImage;
+
+	std::array<uint32_t, 256> histogramRed = { 0 };
+	std::array<uint32_t, 256> histogramGreen = { 0 };
+	std::array<uint32_t, 256> histogramBlue = { 0 };
 };
 
 enum
@@ -67,6 +72,8 @@ public:
 
 	std::vector<IMAGE> m_ImageVector;
 
+	int m_selectedColor;
+
 	afx_msg void OnFileOpen32771();
 	afx_msg void OnFileClose32772();
 	afx_msg void OnLvnItemchangedFileList(NMHDR* pNMHDR, LRESULT* pResult);
@@ -78,4 +85,7 @@ public:
 	// helper functions
 	bool IsDuplicate(const IMAGE& img) const;
 	
+	afx_msg void OnHistogramR();
+	afx_msg void OnHistogramG();
+	afx_msg void OnHistogramB();
 };
