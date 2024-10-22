@@ -392,31 +392,90 @@ void CMFCApplicationTSSDlg::OnLvnItemchangedFileList(NMHDR* pNMHDR, LRESULT* pRe
 	*pResult = 0;
 }
 
+// TO DO: krslit histogramy ktore su selectnute, idea> urobit si vektor boolov krtore sa budu prepoinat piodla klikov a anslesdne sa bude histogram prekreslovat cely ako taky, nie v jednotlivych cases
+// mozno urtobit ze berie na vstup ten vekrtor albeo bopde proste len definovany v class AppDlg 
+
+// TO DO: redraw histograms whenever image is changed
+
+void CMFCApplicationTSSDlg::DrawHistogramCurve(int colorIndex)
+{
+	const std::array<uint32_t, 256>* histogram = nullptr;
+
+	switch (colorIndex) 
+	{
+	case 0: // Red
+		histogram = &m_ImageVector[m_fileList.GetNextItem(-1, LVNI_SELECTED)].histogramRed;
+		break;
+	case 1: // Green
+		histogram = &m_ImageVector[m_fileList.GetNextItem(-1, LVNI_SELECTED)].histogramGreen;
+		break;
+	case 2: // Blue
+		histogram = &m_ImageVector[m_fileList.GetNextItem(-1, LVNI_SELECTED)].histogramBlue;
+		break;
+	default:
+		return;
+	}
+
+
+	CDC* pDC = m_staticHistogram.GetDC();
+
+	CPen colorPen(PS_SOLID, 2, RGB(255 * (colorIndex == 0), 255 * (colorIndex == 1), 255 * (colorIndex == 2)));
+	CPen* pOldPen = pDC->SelectObject(&colorPen);
+
+	int width = m_rectStaticHistogram.Width();
+	int height = m_rectStaticHistogram.Height();
+
+	uint32_t maxVal = *std::max_element(histogram->begin(), histogram->end());
+
+	for (int i = 0; i < 255; ++i) 
+	{
+		int x1 = (i * width) / 255;
+		int y1 = height - (histogram->at(i) * height) / maxVal;
+		int x2 = ((i + 1) * width) / 255;
+		int y2 = height - (histogram->at(i + 1) * height) / maxVal;
+
+		pDC->MoveTo(x1, y1);
+		pDC->LineTo(x2, y2);
+	}
+
+	pDC->SelectObject(pOldPen);
+	m_staticHistogram.ReleaseDC(pDC);
+}
+
 void CMFCApplicationTSSDlg::OnHistogramR()
 {
 	CMenu* pMenu = GetMenu();
 	if (pMenu)
 	{
 		CMenu* pHistogramMenu = pMenu->GetSubMenu(1); 
+		int imgIndex = m_fileList.GetNextItem(-1, LVNI_SELECTED);
 
-		// if button checked, else unchecked
+		if (imgIndex == -1)
+		{
+			AfxMessageBox(_T("Please select an image from the list to display the histogram."));
+			return; 
+		}
+
 		if (pHistogramMenu->GetMenuState(ID_HISTOGRAM_R, MF_BYCOMMAND) & MF_CHECKED)
 		{
+			Invalidate(TRUE);
 			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_R, MF_UNCHECKED);
 			m_selectedColor = -1;
 		}
 		else
 		{
 			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_R, MF_CHECKED);
-			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_G, MF_UNCHECKED);
-			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_B, MF_UNCHECKED);
 
 			m_selectedColor = 0;
+
+			if (!m_ImageVector[imgIndex].histogramCalculated)
+			{
+				CalculateHistogram(imgIndex);
+			}
+
+			DrawHistogramCurve(m_selectedColor);
 		}
 	}
-	CString message;
-	message.Format(_T("%d"), m_selectedColor);
-	AfxMessageBox(message);
 }
 
 void CMFCApplicationTSSDlg::OnHistogramG()
@@ -425,24 +484,33 @@ void CMFCApplicationTSSDlg::OnHistogramG()
 	if (pMenu)
 	{
 		CMenu* pHistogramMenu = pMenu->GetSubMenu(1);
+		int imgIndex = m_fileList.GetNextItem(-1, LVNI_SELECTED);
+
+		if (imgIndex == -1)
+		{
+			AfxMessageBox(_T("Please select an image from the list to display the histogram."));
+			return;
+		}
 
 		if (pHistogramMenu->GetMenuState(ID_HISTOGRAM_G, MF_BYCOMMAND) & MF_CHECKED)
 		{
+			Invalidate(TRUE);
 			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_G, MF_UNCHECKED);
 			m_selectedColor = -1;
 		}
 		else
 		{
 			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_G, MF_CHECKED);
-			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_R, MF_UNCHECKED);
-			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_B, MF_UNCHECKED);
 
 			m_selectedColor = 1;
+
+			if (!m_ImageVector[imgIndex].histogramCalculated)
+			{
+				CalculateHistogram(imgIndex);
+			}
+			DrawHistogramCurve(m_selectedColor);
 		}
 	}
-	CString message;
-	message.Format(_T("%d"), m_selectedColor);
-	AfxMessageBox(message);
 }
 
 void CMFCApplicationTSSDlg::OnHistogramB()
@@ -451,22 +519,77 @@ void CMFCApplicationTSSDlg::OnHistogramB()
 	if (pMenu)
 	{
 		CMenu* pHistogramMenu = pMenu->GetSubMenu(1);
+		int imgIndex = m_fileList.GetNextItem(-1, LVNI_SELECTED);
+
+		if (imgIndex == -1)
+		{
+			AfxMessageBox(_T("Please select an image from the list to display the histogram."));
+			return;
+		}
 
 		if (pHistogramMenu->GetMenuState(ID_HISTOGRAM_B, MF_BYCOMMAND) & MF_CHECKED)
 		{
+			Invalidate(TRUE);
 			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_B, MF_UNCHECKED);
 			m_selectedColor = -1;
 		}
 		else
 		{
 			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_B, MF_CHECKED);
-			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_R, MF_UNCHECKED);
-			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_G, MF_UNCHECKED);
 
 			m_selectedColor = 2;
+
+			if (!m_ImageVector[imgIndex].histogramCalculated)
+			{
+				CalculateHistogram(imgIndex);
+			}
+			DrawHistogramCurve(m_selectedColor);
 		}
 	}
-	CString message;
-	message.Format(_T("%d"), m_selectedColor);
-	AfxMessageBox(message);
+}
+
+void CMFCApplicationTSSDlg::CalculateHistogram(int imgIndex)
+{
+	if (imgIndex < 0 || imgIndex >= m_ImageVector.size()) {
+		AfxMessageBox(_T("Invalid image index."));
+		return;
+	}
+
+	IMAGE& img = m_ImageVector[imgIndex];
+
+	if (img.histogramCalculated) {
+		return;
+	}
+
+	img.histogramRed.fill(0);
+	img.histogramGreen.fill(0);
+	img.histogramBlue.fill(0);
+
+	Gdiplus::Bitmap* bitmap = static_cast<Gdiplus::Bitmap*>(img.gdiImage);
+	Gdiplus::Rect rect(0, 0, bitmap->GetWidth(), bitmap->GetHeight());
+
+	Gdiplus::BitmapData bitmapData;
+	bitmap->LockBits(&rect, Gdiplus::ImageLockModeRead, PixelFormat32bppARGB, &bitmapData);
+
+	BYTE* pixels = static_cast<BYTE*>(bitmapData.Scan0);
+	int stride = bitmapData.Stride;
+
+	for (int y = 0; y < bitmap->GetHeight(); ++y) 
+	{
+		BYTE* row = pixels + (y * stride);  
+		for (int x = 0; x < bitmap->GetWidth(); ++x) 
+		{
+			BYTE blue = row[x * 4 + 0];
+			BYTE green = row[x * 4 + 1];
+			BYTE red = row[x * 4 + 2];
+
+			img.histogramRed[red]++;
+			img.histogramGreen[green]++;
+			img.histogramBlue[blue]++;
+		}
+	}
+
+	bitmap->UnlockBits(&bitmapData);
+
+	img.histogramCalculated = true;
 }

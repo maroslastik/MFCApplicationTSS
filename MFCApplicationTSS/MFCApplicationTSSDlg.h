@@ -5,6 +5,7 @@
 #pragma once
 #include <vector>
 #include <array>
+#include <algorithm>
 
 struct IMAGE 
 {
@@ -12,6 +13,7 @@ struct IMAGE
 	CString name;   
 	Gdiplus::Image* gdiImage;
 
+	bool histogramCalculated = false;
 	std::array<uint32_t, 256> histogramRed = { 0 };
 	std::array<uint32_t, 256> histogramGreen = { 0 };
 	std::array<uint32_t, 256> histogramBlue = { 0 };
@@ -82,10 +84,13 @@ public:
 	afx_msg LRESULT OnDrawImage(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnDrawHistogram(WPARAM wParam, LPARAM lParam);
 
-	// helper functions
-	bool IsDuplicate(const IMAGE& img) const;
-	
+	void CalculateHistogram(int imgIndex);
+	void DrawHistogramCurve(int colorIndex);
 	afx_msg void OnHistogramR();
 	afx_msg void OnHistogramG();
 	afx_msg void OnHistogramB();
+
+	// helper functions
+	bool IsDuplicate(const IMAGE& img) const;
+	
 };
