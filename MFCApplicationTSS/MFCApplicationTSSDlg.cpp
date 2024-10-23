@@ -1,4 +1,3 @@
-
 // MFCApplicationTSSDlg.cpp : implementation file
 //
 
@@ -113,10 +112,10 @@ BOOL CMFCApplicationTSSDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 
 	// TODO: Add extra initialization here
-	
+
 	// histogram initialization
 	// 0 for R, 1 for G, 2 for B, -1 for none
-	m_selectedColor = -1; 
+	m_selectedColor = -1;
 	CheckMenuRadioItem(
 		GetMenu()->m_hMenu,
 		ID_HISTOGRAM_R,
@@ -196,7 +195,7 @@ void CMFCApplicationTSSDlg::OnFileOpen32771()
 			CString filePath = fileDialog.GetNextPathName(pos);
 
 			IMAGE img;
-			img.path = filePath; 
+			img.path = filePath;
 
 			int pos = max(filePath.ReverseFind(_T('\\')), filePath.ReverseFind(_T('/')));
 			if (pos != -1)
@@ -219,7 +218,7 @@ void CMFCApplicationTSSDlg::OnFileOpen32771()
 					img.gdiImage = nullptr;
 				}
 			}
-			else 
+			else
 			{
 				AfxMessageBox(_T("Duplicate file not added: ") + img.name);
 			}
@@ -229,9 +228,9 @@ void CMFCApplicationTSSDlg::OnFileOpen32771()
 
 void CMFCApplicationTSSDlg::OnFileClose32772()
 {
-	int selectedIndex = m_fileList.GetSelectionMark();  
+	int selectedIndex = m_fileList.GetSelectionMark();
 
-	if (selectedIndex == -1) 
+	if (selectedIndex == -1)
 	{
 		AfxMessageBox(_T("No file selected to remove."));
 		return;
@@ -239,13 +238,13 @@ void CMFCApplicationTSSDlg::OnFileClose32772()
 
 	CString fileNameToRemove = m_fileList.GetItemText(selectedIndex, 0);
 
-	if (AfxMessageBox(_T("Are you sure you want to remove this file?"), MB_OKCANCEL | MB_ICONQUESTION) == IDOK) 
+	if (AfxMessageBox(_T("Are you sure you want to remove this file?"), MB_OKCANCEL | MB_ICONQUESTION) == IDOK)
 	{
-		for (auto it = m_ImageVector.begin(); it != m_ImageVector.end(); ++it) 
+		for (auto it = m_ImageVector.begin(); it != m_ImageVector.end(); ++it)
 		{
-			if (it->name == fileNameToRemove) 
+			if (it->name == fileNameToRemove)
 			{
-				m_ImageVector.erase(it); 
+				m_ImageVector.erase(it);
 				break;
 			}
 		}
@@ -254,7 +253,7 @@ void CMFCApplicationTSSDlg::OnFileClose32772()
 
 		if (!m_ImageVector.empty())
 		{
-			m_staticImage.m_gdiImage = m_ImageVector[0].gdiImage; 
+			m_staticImage.m_gdiImage = m_ImageVector[0].gdiImage;
 			m_staticImage.Invalidate();
 			m_staticImage.UpdateWindow();
 
@@ -264,9 +263,9 @@ void CMFCApplicationTSSDlg::OnFileClose32772()
 		}
 		else
 		{
-			m_staticImage.m_gdiImage = nullptr; 
+			m_staticImage.m_gdiImage = nullptr;
 			m_staticImage.Invalidate();
-			m_staticImage.UpdateWindow(); 
+			m_staticImage.UpdateWindow();
 		}
 
 		AfxMessageBox(_T("File removed successfully."), MB_OK | MB_ICONINFORMATION);
@@ -326,15 +325,15 @@ LRESULT CMFCApplicationTSSDlg::OnDrawImage(WPARAM wParam, LPARAM lParam)
 
 		float scaleX = static_cast<float>(rect.Width()) / imageWidth;
 		float scaleY = static_cast<float>(rect.Height()) / imageHeight;
-		float scale = min(scaleX, scaleY); 
+		float scale = min(scaleX, scaleY);
 
 		int scaledWidth = static_cast<int>(imageWidth * scale);
 		int scaledHeight = static_cast<int>(imageHeight * scale);
 
-		int imageX = rect.left + (rect.Width() - scaledWidth) / 2;  
+		int imageX = rect.left + (rect.Width() - scaledWidth) / 2;
 		int imageY = rect.top + (rect.Height() - scaledHeight) / 2;
 
-		Gdiplus::SolidBrush backgroundBrush(Gdiplus::Color(255, 255, 255)); 
+		Gdiplus::SolidBrush backgroundBrush(Gdiplus::Color(255, 255, 255));
 		graphics.FillRectangle(&backgroundBrush, rect.left, rect.top, rect.Width(), rect.Height());
 
 		graphics.DrawImage(m_staticImage.m_gdiImage, imageX, imageY, scaledWidth, scaledHeight);
@@ -350,13 +349,13 @@ LRESULT CMFCApplicationTSSDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
 
 bool CMFCApplicationTSSDlg::IsDuplicate(const IMAGE& img) const
 {
-	for (const auto& existingImg : m_ImageVector) 
+	for (const auto& existingImg : m_ImageVector)
 	{
-		if (existingImg.name == img.name) 
-		{ 
-			if (existingImg.path == img.path) 
-			{ 
-				return true; 
+		if (existingImg.name == img.name)
+		{
+			if (existingImg.path == img.path)
+			{
+				return true;
 			}
 		}
 	}
@@ -397,12 +396,43 @@ void CMFCApplicationTSSDlg::OnLvnItemchangedFileList(NMHDR* pNMHDR, LRESULT* pRe
 
 // TO DO: redraw histograms whenever image is changed
 
-void CMFCApplicationTSSDlg::DrawHistogramCurve(int colorIndex)
+void CMFCApplicationTSSDlg::DrawHistogramCurve()
+{
+	CMenu* pHistogramMenu = GetMenu()->GetSubMenu(0);
+
+	bool isRedChecked = (pHistogramMenu->GetMenuState(ID_HISTOGRAM_R, MF_BYPOSITION) & MF_CHECKED) != 0;
+	bool isGreenChecked = (pHistogramMenu->GetMenuState(ID_HISTOGRAM_G, MF_BYPOSITION) & MF_CHECKED) != 0;
+	bool isBlueChecked = (pHistogramMenu->GetMenuState(ID_HISTOGRAM_B, MF_BYPOSITION) & MF_CHECKED) != 0;
+
+	CDC* pDC = m_staticHistogram.GetDC();
+
+	pDC->FillSolidRect(m_rectStaticHistogram, RGB(255, 255, 255));
+
+	if (isRedChecked)
+	{
+		DrawHistogramForColor(pDC, 0);
+	}
+	if (isGreenChecked)
+	{
+		DrawHistogramForColor(pDC, 1);
+	}
+	if (isBlueChecked)
+	{
+		DrawHistogramForColor(pDC, 2);
+	}
+
+	m_staticHistogram.ReleaseDC(pDC);
+}
+
+void CMFCApplicationTSSDlg::DrawHistogramForColor(CDC* pDC, int colorIndex)
 {
 	const std::array<uint32_t, 256>* histogram = nullptr;
 
-	switch (colorIndex) 
+	switch (colorIndex)
 	{
+	case -1: // None
+		pDC->FillSolidRect(m_rectStaticHistogram, RGB(255, 255, 255));
+		return;
 	case 0: // Red
 		histogram = &m_ImageVector[m_fileList.GetNextItem(-1, LVNI_SELECTED)].histogramRed;
 		break;
@@ -416,9 +446,6 @@ void CMFCApplicationTSSDlg::DrawHistogramCurve(int colorIndex)
 		return;
 	}
 
-
-	CDC* pDC = m_staticHistogram.GetDC();
-
 	CPen colorPen(PS_SOLID, 2, RGB(255 * (colorIndex == 0), 255 * (colorIndex == 1), 255 * (colorIndex == 2)));
 	CPen* pOldPen = pDC->SelectObject(&colorPen);
 
@@ -427,7 +454,7 @@ void CMFCApplicationTSSDlg::DrawHistogramCurve(int colorIndex)
 
 	uint32_t maxVal = *std::max_element(histogram->begin(), histogram->end());
 
-	for (int i = 0; i < 255; ++i) 
+	for (int i = 0; i < 255; ++i)
 	{
 		int x1 = (i * width) / 255;
 		int y1 = height - (histogram->at(i) * height) / maxVal;
@@ -439,7 +466,6 @@ void CMFCApplicationTSSDlg::DrawHistogramCurve(int colorIndex)
 	}
 
 	pDC->SelectObject(pOldPen);
-	m_staticHistogram.ReleaseDC(pDC);
 }
 
 void CMFCApplicationTSSDlg::OnHistogramR()
@@ -447,18 +473,17 @@ void CMFCApplicationTSSDlg::OnHistogramR()
 	CMenu* pMenu = GetMenu();
 	if (pMenu)
 	{
-		CMenu* pHistogramMenu = pMenu->GetSubMenu(1); 
+		CMenu* pHistogramMenu = pMenu->GetSubMenu(1);
 		int imgIndex = m_fileList.GetNextItem(-1, LVNI_SELECTED);
 
 		if (imgIndex == -1)
 		{
 			AfxMessageBox(_T("Please select an image from the list to display the histogram."));
-			return; 
+			return;
 		}
 
 		if (pHistogramMenu->GetMenuState(ID_HISTOGRAM_R, MF_BYCOMMAND) & MF_CHECKED)
 		{
-			Invalidate(TRUE);
 			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_R, MF_UNCHECKED);
 			m_selectedColor = -1;
 		}
@@ -472,9 +497,8 @@ void CMFCApplicationTSSDlg::OnHistogramR()
 			{
 				CalculateHistogram(imgIndex);
 			}
-
-			DrawHistogramCurve(m_selectedColor);
 		}
+		DrawHistogramCurve();
 	}
 }
 
@@ -494,7 +518,6 @@ void CMFCApplicationTSSDlg::OnHistogramG()
 
 		if (pHistogramMenu->GetMenuState(ID_HISTOGRAM_G, MF_BYCOMMAND) & MF_CHECKED)
 		{
-			Invalidate(TRUE);
 			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_G, MF_UNCHECKED);
 			m_selectedColor = -1;
 		}
@@ -508,8 +531,8 @@ void CMFCApplicationTSSDlg::OnHistogramG()
 			{
 				CalculateHistogram(imgIndex);
 			}
-			DrawHistogramCurve(m_selectedColor);
 		}
+		DrawHistogramCurve();
 	}
 }
 
@@ -529,7 +552,6 @@ void CMFCApplicationTSSDlg::OnHistogramB()
 
 		if (pHistogramMenu->GetMenuState(ID_HISTOGRAM_B, MF_BYCOMMAND) & MF_CHECKED)
 		{
-			Invalidate(TRUE);
 			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_B, MF_UNCHECKED);
 			m_selectedColor = -1;
 		}
@@ -543,8 +565,8 @@ void CMFCApplicationTSSDlg::OnHistogramB()
 			{
 				CalculateHistogram(imgIndex);
 			}
-			DrawHistogramCurve(m_selectedColor);
 		}
+		DrawHistogramCurve();
 	}
 }
 
@@ -574,10 +596,10 @@ void CMFCApplicationTSSDlg::CalculateHistogram(int imgIndex)
 	BYTE* pixels = static_cast<BYTE*>(bitmapData.Scan0);
 	int stride = bitmapData.Stride;
 
-	for (int y = 0; y < bitmap->GetHeight(); ++y) 
+	for (int y = 0; y < bitmap->GetHeight(); ++y)
 	{
-		BYTE* row = pixels + (y * stride);  
-		for (int x = 0; x < bitmap->GetWidth(); ++x) 
+		BYTE* row = pixels + (y * stride);
+		for (int x = 0; x < bitmap->GetWidth(); ++x)
 		{
 			BYTE blue = row[x * 4 + 0];
 			BYTE green = row[x * 4 + 1];

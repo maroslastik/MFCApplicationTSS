@@ -1,4 +1,3 @@
-
 // MFCApplicationTSSDlg.h : header file
 //
 
@@ -7,10 +6,10 @@
 #include <array>
 #include <algorithm>
 
-struct IMAGE 
+struct IMAGE
 {
 	CString path;
-	CString name;   
+	CString name;
 	Gdiplus::Image* gdiImage;
 
 	bool histogramCalculated = false;
@@ -42,7 +41,7 @@ class CStaticHistogram : public CStatic
 class CMFCApplicationTSSDlg : public CDialogEx
 {
 public:
-	CMFCApplicationTSSDlg(CWnd* pParent = nullptr);	
+	CMFCApplicationTSSDlg(CWnd* pParent = nullptr);
 
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_MFCAPPLICATIONTSS_DIALOG };
@@ -85,12 +84,14 @@ public:
 	afx_msg LRESULT OnDrawHistogram(WPARAM wParam, LPARAM lParam);
 
 	void CalculateHistogram(int imgIndex);
-	void DrawHistogramCurve(int colorIndex);
+	void DrawHistogramCurve();
+	void DrawHistogramForColor(CDC* pDC, int colorIndex);
+	void OnHistogram(int colorIndex, UINT histogramID);
 	afx_msg void OnHistogramR();
 	afx_msg void OnHistogramG();
 	afx_msg void OnHistogramB();
 
 	// helper functions
 	bool IsDuplicate(const IMAGE& img) const;
-	
+
 };
