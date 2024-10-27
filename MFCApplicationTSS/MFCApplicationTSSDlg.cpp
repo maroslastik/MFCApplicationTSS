@@ -409,14 +409,6 @@ void CMFCApplicationTSSDlg::OnLvnItemchangedFileList(NMHDR* pNMHDR, LRESULT* pRe
 
 			m_staticImage.Invalidate();
 			m_staticImage.UpdateWindow();
-
-			if (m_histogramChecked[0] || m_histogramChecked[1] || m_histogramChecked[2])
-			{
-				if (!img.histogramCalculated)
-				{
-					CalculateHistogram(nItem);
-				}
-			}
 			m_staticHistogram.Invalidate();
 		}
 	}
