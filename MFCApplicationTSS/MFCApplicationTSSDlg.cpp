@@ -115,7 +115,6 @@ BOOL CMFCApplicationTSSDlg::OnInitDialog()
 
 	// histogram initialization
 	// 0 for R, 1 for G, 2 for B, -1 for none
-	m_selectedColor = -1;
 	CheckMenuRadioItem(
 		GetMenu()->m_hMenu,
 		ID_HISTOGRAM_R,
@@ -344,6 +343,38 @@ LRESULT CMFCApplicationTSSDlg::OnDrawImage(WPARAM wParam, LPARAM lParam)
 
 LRESULT CMFCApplicationTSSDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
 {
+	LPDRAWITEMSTRUCT pDIS = (LPDRAWITEMSTRUCT)wParam;
+	CDC* pDC = CDC::FromHandle(pDIS->hDC);
+
+	Gdiplus::Graphics graphics(pDIS->hDC);
+	CRect rect = pDIS->rcItem;
+	Gdiplus::SolidBrush backgroundBrush(Gdiplus::Color(255, 255, 255));
+	graphics.FillRectangle(&backgroundBrush, rect.left, rect.top, rect.Width(), rect.Height());
+
+	int imgIndex = m_fileList.GetNextItem(-1, LVNI_SELECTED);
+	if (imgIndex >= 0 && imgIndex < m_ImageVector.size())
+	{
+		IMAGE& img = m_ImageVector[imgIndex];
+
+		if (!img.histogramCalculated)
+		{
+			CalculateHistogram(imgIndex);
+		}
+
+		if (m_histogramChecked[0])
+		{
+			DrawHistogramForColor(pDC, 0);
+		}
+		if (m_histogramChecked[1])
+		{
+			DrawHistogramForColor(pDC, 1);
+		}
+		if (m_histogramChecked[2])
+		{
+			DrawHistogramForColor(pDC, 2);
+		}
+	}
+
 	return S_OK;
 }
 
@@ -369,6 +400,7 @@ void CStaticImage::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 
 void CStaticHistogram::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 {
+	GetParent()->SendMessage(WM_DRAW_HISTOGRAM, (WPARAM)lpDrawItemStruct);
 }
 
 void CMFCApplicationTSSDlg::OnLvnItemchangedFileList(NMHDR* pNMHDR, LRESULT* pResult)
@@ -386,42 +418,15 @@ void CMFCApplicationTSSDlg::OnLvnItemchangedFileList(NMHDR* pNMHDR, LRESULT* pRe
 
 			m_staticImage.Invalidate();
 			m_staticImage.UpdateWindow();
+
+			if (!img.histogramCalculated)
+			{
+				CalculateHistogram(nItem);
+			}
+			m_staticHistogram.Invalidate();
 		}
 	}
 	*pResult = 0;
-}
-
-// TO DO: krslit histogramy ktore su selectnute, idea> urobit si vektor boolov krtore sa budu prepoinat piodla klikov a anslesdne sa bude histogram prekreslovat cely ako taky, nie v jednotlivych cases
-// mozno urtobit ze berie na vstup ten vekrtor albeo bopde proste len definovany v class AppDlg 
-
-// TO DO: redraw histograms whenever image is changed
-
-void CMFCApplicationTSSDlg::DrawHistogramCurve()
-{
-	CMenu* pHistogramMenu = GetMenu()->GetSubMenu(0);
-
-	bool isRedChecked = (pHistogramMenu->GetMenuState(ID_HISTOGRAM_R, MF_BYPOSITION) & MF_CHECKED) != 0;
-	bool isGreenChecked = (pHistogramMenu->GetMenuState(ID_HISTOGRAM_G, MF_BYPOSITION) & MF_CHECKED) != 0;
-	bool isBlueChecked = (pHistogramMenu->GetMenuState(ID_HISTOGRAM_B, MF_BYPOSITION) & MF_CHECKED) != 0;
-
-	CDC* pDC = m_staticHistogram.GetDC();
-
-	pDC->FillSolidRect(m_rectStaticHistogram, RGB(255, 255, 255));
-
-	if (isRedChecked)
-	{
-		DrawHistogramForColor(pDC, 0);
-	}
-	if (isGreenChecked)
-	{
-		DrawHistogramForColor(pDC, 1);
-	}
-	if (isBlueChecked)
-	{
-		DrawHistogramForColor(pDC, 2);
-	}
-
-	m_staticHistogram.ReleaseDC(pDC);
 }
 
 void CMFCApplicationTSSDlg::DrawHistogramForColor(CDC* pDC, int colorIndex)
@@ -430,16 +435,13 @@ void CMFCApplicationTSSDlg::DrawHistogramForColor(CDC* pDC, int colorIndex)
 
 	switch (colorIndex)
 	{
-	case -1: // None
-		pDC->FillSolidRect(m_rectStaticHistogram, RGB(255, 255, 255));
-		return;
-	case 0: // Red
+	case 0:
 		histogram = &m_ImageVector[m_fileList.GetNextItem(-1, LVNI_SELECTED)].histogramRed;
 		break;
-	case 1: // Green
+	case 1:
 		histogram = &m_ImageVector[m_fileList.GetNextItem(-1, LVNI_SELECTED)].histogramGreen;
 		break;
-	case 2: // Blue
+	case 2:
 		histogram = &m_ImageVector[m_fileList.GetNextItem(-1, LVNI_SELECTED)].histogramBlue;
 		break;
 	default:
@@ -485,21 +487,15 @@ void CMFCApplicationTSSDlg::OnHistogramR()
 		if (pHistogramMenu->GetMenuState(ID_HISTOGRAM_R, MF_BYCOMMAND) & MF_CHECKED)
 		{
 			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_R, MF_UNCHECKED);
-			m_selectedColor = -1;
+			m_histogramChecked[0] = false;
 		}
 		else
 		{
 			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_R, MF_CHECKED);
-
-			m_selectedColor = 0;
-
-			if (!m_ImageVector[imgIndex].histogramCalculated)
-			{
-				CalculateHistogram(imgIndex);
-			}
+			m_histogramChecked[0] = true;
 		}
-		DrawHistogramCurve();
 	}
+	m_staticHistogram.Invalidate();
 }
 
 void CMFCApplicationTSSDlg::OnHistogramG()
@@ -519,21 +515,15 @@ void CMFCApplicationTSSDlg::OnHistogramG()
 		if (pHistogramMenu->GetMenuState(ID_HISTOGRAM_G, MF_BYCOMMAND) & MF_CHECKED)
 		{
 			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_G, MF_UNCHECKED);
-			m_selectedColor = -1;
+			m_histogramChecked[1] = false;
 		}
 		else
 		{
 			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_G, MF_CHECKED);
-
-			m_selectedColor = 1;
-
-			if (!m_ImageVector[imgIndex].histogramCalculated)
-			{
-				CalculateHistogram(imgIndex);
-			}
+			m_histogramChecked[1] = true;
 		}
-		DrawHistogramCurve();
 	}
+	m_staticHistogram.Invalidate();
 }
 
 void CMFCApplicationTSSDlg::OnHistogramB()
@@ -553,21 +543,15 @@ void CMFCApplicationTSSDlg::OnHistogramB()
 		if (pHistogramMenu->GetMenuState(ID_HISTOGRAM_B, MF_BYCOMMAND) & MF_CHECKED)
 		{
 			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_B, MF_UNCHECKED);
-			m_selectedColor = -1;
+			m_histogramChecked[2] = false;
 		}
 		else
 		{
 			pHistogramMenu->CheckMenuItem(ID_HISTOGRAM_B, MF_CHECKED);
-
-			m_selectedColor = 2;
-
-			if (!m_ImageVector[imgIndex].histogramCalculated)
-			{
-				CalculateHistogram(imgIndex);
-			}
+			m_histogramChecked[2] = true;
 		}
-		DrawHistogramCurve();
 	}
+	m_staticHistogram.Invalidate();
 }
 
 void CMFCApplicationTSSDlg::CalculateHistogram(int imgIndex)

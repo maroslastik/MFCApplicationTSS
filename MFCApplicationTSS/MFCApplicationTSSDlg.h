@@ -72,8 +72,7 @@ public:
 	CRect m_rectStaticImage;
 
 	std::vector<IMAGE> m_ImageVector;
-
-	int m_selectedColor;
+	std::array<bool, 3> m_histogramChecked= { false, false, false };
 
 	afx_msg void OnFileOpen32771();
 	afx_msg void OnFileClose32772();
@@ -84,9 +83,7 @@ public:
 	afx_msg LRESULT OnDrawHistogram(WPARAM wParam, LPARAM lParam);
 
 	void CalculateHistogram(int imgIndex);
-	void DrawHistogramCurve();
 	void DrawHistogramForColor(CDC* pDC, int colorIndex);
-	void OnHistogram(int colorIndex, UINT histogramID);
 	afx_msg void OnHistogramR();
 	afx_msg void OnHistogramG();
 	afx_msg void OnHistogramB();
