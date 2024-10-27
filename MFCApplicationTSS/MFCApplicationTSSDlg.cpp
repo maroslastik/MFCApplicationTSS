@@ -126,6 +126,7 @@ BOOL CMFCApplicationTSSDlg::OnInitDialog()
 	m_fileList.GetWindowRect(&m_rectFileList);
 	m_staticHistogram.GetWindowRect(&m_rectStaticHistogram);
 	m_staticImage.GetWindowRect(&m_rectStaticImage);
+	m_histogramChecked = { false, false, false };
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -356,23 +357,13 @@ LRESULT CMFCApplicationTSSDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
 	{
 		IMAGE& img = m_ImageVector[imgIndex];
 
-		if (!img.histogramCalculated)
-		{
-			CalculateHistogram(imgIndex);
-		}
+		if (m_histogramChecked[0] || m_histogramChecked[1] || m_histogramChecked[2])
+			if (!img.histogramCalculated)
+				CalculateHistogram(imgIndex);
 
-		if (m_histogramChecked[0])
-		{
-			DrawHistogramForColor(pDC, 0);
-		}
-		if (m_histogramChecked[1])
-		{
-			DrawHistogramForColor(pDC, 1);
-		}
-		if (m_histogramChecked[2])
-		{
-			DrawHistogramForColor(pDC, 2);
-		}
+		if (m_histogramChecked[0]) DrawHistogramForColor(pDC, 0);
+		if (m_histogramChecked[1]) DrawHistogramForColor(pDC, 1);
+		if (m_histogramChecked[2]) DrawHistogramForColor(pDC, 2);
 	}
 
 	return S_OK;
@@ -419,9 +410,12 @@ void CMFCApplicationTSSDlg::OnLvnItemchangedFileList(NMHDR* pNMHDR, LRESULT* pRe
 			m_staticImage.Invalidate();
 			m_staticImage.UpdateWindow();
 
-			if (!img.histogramCalculated)
+			if (m_histogramChecked[0] || m_histogramChecked[1] || m_histogramChecked[2])
 			{
-				CalculateHistogram(nItem);
+				if (!img.histogramCalculated)
+				{
+					CalculateHistogram(nItem);
+				}
 			}
 			m_staticHistogram.Invalidate();
 		}
