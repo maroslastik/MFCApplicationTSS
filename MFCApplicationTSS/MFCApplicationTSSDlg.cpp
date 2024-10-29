@@ -294,10 +294,12 @@ void CMFCApplicationTSSDlg::OnSize(UINT nType, int cx, int cy)
 		m_fileList.SetWindowPos(NULL, m_rectFileList.left, m_rectFileList.top, m_rectFileList.Width(), newFileListHeight, SWP_NOZORDER);
 
 		// image
+		int fileListRightEdge = m_rectFileList.left + m_rectFileList.Width();
 		m_staticImage.GetWindowRect(&m_rectStaticImage);
 		ScreenToClient(&m_rectStaticImage);
-		int newImageWidth = cx - m_rectFileList.Width();
-		m_staticImage.SetWindowPos(NULL, m_rectFileList.right, m_rectStaticImage.top, newImageWidth, newFileListHeight + m_rectStaticHistogram.Height(), SWP_NOZORDER);
+		int newImageWidth = cx - fileListRightEdge;
+		int newImageHeight = newFileListHeight + m_rectStaticHistogram.Height();
+		m_staticImage.SetWindowPos(NULL, fileListRightEdge, m_rectStaticImage.top, newImageWidth, newImageHeight, SWP_NOZORDER);
 
 		m_staticImage.Invalidate();
 		m_staticImage.UpdateWindow();
