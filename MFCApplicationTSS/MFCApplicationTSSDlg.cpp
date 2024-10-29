@@ -6,6 +6,7 @@
 #include "MFCApplicationTSS.h"
 #include "MFCApplicationTSSDlg.h"
 #include "afxdialogex.h"
+#include "HistogramCalculator.h" // subor pre pocitanie histogramu
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -555,33 +556,21 @@ void CMFCApplicationTSSDlg::CalculateHistogram(int imgIndex)
 		return;
 	}
 
-	img.histogramRed.fill(0);
-	img.histogramGreen.fill(0);
-	img.histogramBlue.fill(0);
-
 	Gdiplus::Bitmap* bitmap = static_cast<Gdiplus::Bitmap*>(img.gdiImage);
 	Gdiplus::Rect rect(0, 0, bitmap->GetWidth(), bitmap->GetHeight());
 
 	Gdiplus::BitmapData bitmapData;
 	bitmap->LockBits(&rect, Gdiplus::ImageLockModeRead, PixelFormat32bppARGB, &bitmapData);
 
-	BYTE* pixels = static_cast<BYTE*>(bitmapData.Scan0);
-	int stride = bitmapData.Stride;
-
-	for (int y = 0; y < bitmap->GetHeight(); ++y)
-	{
-		BYTE* row = pixels + (y * stride);
-		for (int x = 0; x < bitmap->GetWidth(); ++x)
-		{
-			BYTE blue = row[x * 4 + 0];
-			BYTE green = row[x * 4 + 1];
-			BYTE red = row[x * 4 + 2];
-
-			img.histogramRed[red]++;
-			img.histogramGreen[green]++;
-			img.histogramBlue[blue]++;
-		}
-	}
+	CalculateHistogramFromPixels(
+		static_cast<BYTE*>(bitmapData.Scan0),
+		bitmap->GetWidth(),
+		bitmap->GetHeight(),
+		bitmapData.Stride,
+		img.histogramRed,
+		img.histogramGreen,
+		img.histogramBlue
+	);
 
 	bitmap->UnlockBits(&bitmapData);
 
