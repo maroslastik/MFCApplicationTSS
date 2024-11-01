@@ -2,7 +2,10 @@
 #include "HistogramCalculator.h"
 
 void CalculateHistogramFromPixels(
-    const uint8_t* pixels, int width, int height, int stride,
+    const uint8_t* pixels, 
+    int width, 
+    int height, 
+    int stride,
     std::array<uint32_t, 256>& histogramRed,
     std::array<uint32_t, 256>& histogramGreen,
     std::array<uint32_t, 256>& histogramBlue

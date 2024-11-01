@@ -6,7 +6,7 @@
 #include "MFCApplicationTSS.h"
 #include "MFCApplicationTSSDlg.h"
 #include "afxdialogex.h"
-#include "HistogramCalculator.h" // subor pre pocitanie histogramu
+#include "HistogramCalculator.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
