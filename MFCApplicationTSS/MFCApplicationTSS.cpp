@@ -5,6 +5,7 @@
 #include "framework.h"
 #include "MFCApplicationTSS.h"
 #include "MFCApplicationTSSDlg.h"
+#include "HistogramCalculator.h"
 #include <gdiplus.h>
 
 using namespace Gdiplus;
