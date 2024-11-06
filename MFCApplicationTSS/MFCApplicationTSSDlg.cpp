@@ -361,14 +361,20 @@ LRESULT CMFCApplicationTSSDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
 		IMAGE& img = m_ImageVector[imgIndex];
 
 		if (m_histogramChecked[0] || m_histogramChecked[1] || m_histogramChecked[2])
+		{
 			if (!img.histogramCalculated)
-				CalculateHistogram(imgIndex);
+			{
+				AfxBeginThread(CalculateHistogramThread, (LPVOID)imgIndex);
+				return S_OK;
+			}
+		}
 
 		if (m_histogramChecked[0]) DrawHistogramForColor(pDC, 0);
 		if (m_histogramChecked[1]) DrawHistogramForColor(pDC, 1);
 		if (m_histogramChecked[2]) DrawHistogramForColor(pDC, 2);
 	}
 
+	Invalidate();
 	return S_OK;
 }
 
@@ -552,10 +558,6 @@ void CMFCApplicationTSSDlg::CalculateHistogram(int imgIndex)
 
 	IMAGE& img = m_ImageVector[imgIndex];
 
-	if (img.histogramCalculated) {
-		return;
-	}
-
 	Gdiplus::Bitmap* bitmap = static_cast<Gdiplus::Bitmap*>(img.gdiImage);
 	Gdiplus::Rect rect(0, 0, bitmap->GetWidth(), bitmap->GetHeight());
 
@@ -575,4 +577,16 @@ void CMFCApplicationTSSDlg::CalculateHistogram(int imgIndex)
 	bitmap->UnlockBits(&bitmapData);
 
 	img.histogramCalculated = true;
+}
+
+UINT CMFCApplicationTSSDlg::CalculateHistogramThread(LPVOID pParam)
+{
+	int imgIndex = (int)pParam; 
+	IMAGE& img = m_ImageVector[imgIndex];
+
+	CalculateHistogram(imgIndex);
+
+	AfxGetMainWnd()->PostMessage(WM_USER + 1, imgIndex, 0);
+
+	return 0;
 }

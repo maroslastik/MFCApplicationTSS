@@ -82,11 +82,13 @@ public:
 	afx_msg LRESULT OnDrawImage(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnDrawHistogram(WPARAM wParam, LPARAM lParam);
 
+	static UINT CalculateHistogramThread(LPVOID pParam);
 	void CalculateHistogram(int imgIndex);
 	void DrawHistogramForColor(CDC* pDC, int colorIndex);
 	afx_msg void OnHistogramR();
 	afx_msg void OnHistogramG();
 	afx_msg void OnHistogramB();
+	// TO DO: function that handles histogramCalculated
 
 	// helper functions
 	bool IsDuplicate(const IMAGE& img) const;
