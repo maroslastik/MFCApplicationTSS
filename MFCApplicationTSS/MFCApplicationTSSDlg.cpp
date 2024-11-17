@@ -71,6 +71,8 @@ BEGIN_MESSAGE_MAP(CMFCApplicationTSSDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
 	ON_MESSAGE(WM_DRAW_IMAGE, OnDrawImage)
 	ON_MESSAGE(WM_DRAW_HISTOGRAM, OnDrawHistogram)
+	ON_MESSAGE(WM_HISTOGRAM_CALCULATED, &CMFCApplicationTSSDlg::OnHistogramCalculated)
+
 	ON_COMMAND(ID_FILE_OPEN32771, &CMFCApplicationTSSDlg::OnFileOpen32771)
 	ON_COMMAND(ID_FILE_CLOSE32772, &CMFCApplicationTSSDlg::OnFileClose32772)
 	ON_WM_SIZE()
@@ -361,15 +363,28 @@ LRESULT CMFCApplicationTSSDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
 		IMAGE& img = m_ImageVector[imgIndex];
 
 		if (m_histogramChecked[0] || m_histogramChecked[1] || m_histogramChecked[2])
-			if (!img.histogramCalculated)
+		{
+			if (!img.histogramCalculated && !img.histogramRunning)
+			{
 				CalculateHistogram(imgIndex);
-
-		if (m_histogramChecked[0]) DrawHistogramForColor(pDC, 0);
-		if (m_histogramChecked[1]) DrawHistogramForColor(pDC, 1);
-		if (m_histogramChecked[2]) DrawHistogramForColor(pDC, 2);
+			}
+			else
+			{
+				return S_OK;
+			}
+		}
+		if (m_histogramChecked[0] && !img.histogramRunning && !img.histogramCalculated) DrawHistogramForColor(pDC, 0);
+		if (m_histogramChecked[1] && !img.histogramRunning && !img.histogramCalculated) DrawHistogramForColor(pDC, 1);
+		if (m_histogramChecked[2] && !img.histogramRunning && !img.histogramCalculated) DrawHistogramForColor(pDC, 2);
 	}
-
+	
 	return S_OK;
+}
+
+LRESULT CMFCApplicationTSSDlg::OnHistogramCalculated(WPARAM wParam, LPARAM lParam)
+{
+	Invalidate(true);
+	return LRESULT();
 }
 
 bool CMFCApplicationTSSDlg::IsDuplicate(const IMAGE& img) const
@@ -448,7 +463,7 @@ void CMFCApplicationTSSDlg::DrawHistogramForColor(CDC* pDC, int colorIndex)
 	for (int i = 0; i < 255; ++i)
 	{
 		int x1 = (i * width) / 255;
-		int y1 = height - (histogram->at(i) * height) / maxVal;
+		int y1 = height - (histogram->at(i) * height) / maxVal; // error
 		int x2 = ((i + 1) * width) / 255;
 		int y2 = height - (histogram->at(i + 1) * height) / maxVal;
 
@@ -552,7 +567,8 @@ void CMFCApplicationTSSDlg::CalculateHistogram(int imgIndex)
 
 	IMAGE& img = m_ImageVector[imgIndex];
 
-	if (img.histogramCalculated) {
+	if (img.histogramCalculated && img.histogramRunning) 
+	{
 		return;
 	}
 
@@ -562,17 +578,25 @@ void CMFCApplicationTSSDlg::CalculateHistogram(int imgIndex)
 	Gdiplus::BitmapData bitmapData;
 	bitmap->LockBits(&rect, Gdiplus::ImageLockModeRead, PixelFormat32bppARGB, &bitmapData);
 
-	CalculateHistogramFromPixels(
-		static_cast<BYTE*>(bitmapData.Scan0),
-		bitmap->GetWidth(),
-		bitmap->GetHeight(),
-		bitmapData.Stride,
-		img.histogramRed,
-		img.histogramGreen,
-		img.histogramBlue
-	);
+	std::thread([this, &img, bitmap, bitmapData]()
+	{
+		img.histogramRunning = true;
+		Sleep(2000);
+
+		CalculateHistogramFromPixels(
+			static_cast<BYTE*>(bitmapData.Scan0),
+			bitmap->GetWidth(),
+			bitmap->GetHeight(),
+			bitmapData.Stride,
+			img.histogramRed,
+			img.histogramGreen,
+			img.histogramBlue
+		);
+
+		img.histogramCalculated = true;
+		PostMessage(WM_HISTOGRAM_CALCULATED);
+		img.histogramRunning = false;
+	}).detach();
 
 	bitmap->UnlockBits(&bitmapData);
-
-	img.histogramCalculated = true;
 }

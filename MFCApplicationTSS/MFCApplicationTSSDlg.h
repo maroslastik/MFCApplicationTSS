@@ -5,6 +5,8 @@
 #include <vector>
 #include <array>
 #include <algorithm>
+#include <thread>
+
 
 struct IMAGE
 {
@@ -13,6 +15,8 @@ struct IMAGE
 	Gdiplus::Image* gdiImage;
 
 	bool histogramCalculated = false;
+	bool histogramRunning = false;
+
 	std::array<uint32_t, 256> histogramRed = { 0 };
 	std::array<uint32_t, 256> histogramGreen = { 0 };
 	std::array<uint32_t, 256> histogramBlue = { 0 };
@@ -21,7 +25,8 @@ struct IMAGE
 enum
 {
 	WM_DRAW_IMAGE = WM_USER + 1,
-	WM_DRAW_HISTOGRAM
+	WM_DRAW_HISTOGRAM, 
+	WM_HISTOGRAM_CALCULATED
 };
 
 class CStaticImage : public CStatic
@@ -81,6 +86,7 @@ public:
 
 	afx_msg LRESULT OnDrawImage(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnDrawHistogram(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnHistogramCalculated(WPARAM wParam, LPARAM lParam);
 
 	void CalculateHistogram(int imgIndex);
 	void DrawHistogramForColor(CDC* pDC, int colorIndex);
