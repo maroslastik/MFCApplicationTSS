@@ -1,4 +1,4 @@
-// MFCApplicationTSSDlg.cpp : implementation file
+﻿// MFCApplicationTSSDlg.cpp : implementation file
 //
 
 #include "pch.h"
@@ -349,6 +349,8 @@ LRESULT CMFCApplicationTSSDlg::OnDrawImage(WPARAM wParam, LPARAM lParam)
 
 LRESULT CMFCApplicationTSSDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
 {
+	if (!m_histogramChecked[0] && !m_histogramChecked[1] && !m_histogramChecked[2])
+		return S_OK;
 	LPDRAWITEMSTRUCT pDIS = (LPDRAWITEMSTRUCT)wParam;
 	CDC* pDC = CDC::FromHandle(pDIS->hDC);
 
@@ -362,20 +364,25 @@ LRESULT CMFCApplicationTSSDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
 	{
 		IMAGE& img = m_ImageVector[imgIndex];
 
-		if (m_histogramChecked[0] || m_histogramChecked[1] || m_histogramChecked[2])
+		if (img.histogramCalculated)
 		{
-			if (!img.histogramCalculated && !img.histogramRunning)
+			if (m_histogramChecked[0]) DrawHistogramForColor(pDC, 0);
+			if (m_histogramChecked[1]) DrawHistogramForColor(pDC, 1);
+			if (m_histogramChecked[2]) DrawHistogramForColor(pDC, 2);
+			return S_OK;
+		}
+		else
+		{
+			if (!img.histogramRunning)
 			{
 				CalculateHistogram(imgIndex);
+				return S_OK;
 			}
 			else
 			{
 				return S_OK;
 			}
 		}
-		if (m_histogramChecked[0] && !img.histogramRunning && !img.histogramCalculated) DrawHistogramForColor(pDC, 0);
-		if (m_histogramChecked[1] && !img.histogramRunning && !img.histogramCalculated) DrawHistogramForColor(pDC, 1);
-		if (m_histogramChecked[2] && !img.histogramRunning && !img.histogramCalculated) DrawHistogramForColor(pDC, 2);
 	}
 	
 	return S_OK;
@@ -383,7 +390,7 @@ LRESULT CMFCApplicationTSSDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
 
 LRESULT CMFCApplicationTSSDlg::OnHistogramCalculated(WPARAM wParam, LPARAM lParam)
 {
-	Invalidate(true);
+	m_staticHistogram.Invalidate(true);
 	return LRESULT();
 }
 
@@ -428,6 +435,10 @@ void CMFCApplicationTSSDlg::OnLvnItemchangedFileList(NMHDR* pNMHDR, LRESULT* pRe
 			m_staticImage.Invalidate();
 			m_staticImage.UpdateWindow();
 			m_staticHistogram.Invalidate();
+			if (m_histogramChecked[0] || m_histogramChecked[1] || m_histogramChecked[2])
+			{
+				
+			}
 		}
 	}
 	*pResult = 0;
@@ -560,17 +571,7 @@ void CMFCApplicationTSSDlg::OnHistogramB()
 
 void CMFCApplicationTSSDlg::CalculateHistogram(int imgIndex)
 {
-	if (imgIndex < 0 || imgIndex >= m_ImageVector.size()) {
-		AfxMessageBox(_T("Invalid image index."));
-		return;
-	}
-
 	IMAGE& img = m_ImageVector[imgIndex];
-
-	if (img.histogramCalculated && img.histogramRunning) 
-	{
-		return;
-	}
 
 	Gdiplus::Bitmap* bitmap = static_cast<Gdiplus::Bitmap*>(img.gdiImage);
 	Gdiplus::Rect rect(0, 0, bitmap->GetWidth(), bitmap->GetHeight());
@@ -581,8 +582,7 @@ void CMFCApplicationTSSDlg::CalculateHistogram(int imgIndex)
 	std::thread([this, &img, bitmap, bitmapData]()
 	{
 		img.histogramRunning = true;
-		Sleep(2000);
-
+		Sleep(5000);
 		CalculateHistogramFromPixels(
 			static_cast<BYTE*>(bitmapData.Scan0),
 			bitmap->GetWidth(),
@@ -594,8 +594,8 @@ void CMFCApplicationTSSDlg::CalculateHistogram(int imgIndex)
 		);
 
 		img.histogramCalculated = true;
-		PostMessage(WM_HISTOGRAM_CALCULATED);
 		img.histogramRunning = false;
+		PostMessage(WM_HISTOGRAM_CALCULATED);
 	}).detach();
 
 	bitmap->UnlockBits(&bitmapData);
