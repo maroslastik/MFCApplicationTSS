@@ -80,6 +80,9 @@ BEGIN_MESSAGE_MAP(CMFCApplicationTSSDlg, CDialogEx)
 	ON_COMMAND(ID_HISTOGRAM_R, &CMFCApplicationTSSDlg::OnHistogramR)
 	ON_COMMAND(ID_HISTOGRAM_G, &CMFCApplicationTSSDlg::OnHistogramG)
 	ON_COMMAND(ID_HISTOGRAM_B, &CMFCApplicationTSSDlg::OnHistogramB)
+
+	ON_COMMAND(ID_IMAGE_HORIZONTAL, &CMFCApplicationTSSDlg::OnHorizontalF)
+	ON_COMMAND(ID_IMAGE_VERTICAL, &CMFCApplicationTSSDlg::OnVerticalF)
 END_MESSAGE_MAP()
 
 
@@ -315,7 +318,7 @@ LRESULT CMFCApplicationTSSDlg::OnDrawImage(WPARAM wParam, LPARAM lParam)
 
 	Gdiplus::Graphics graphics(pDIS->hDC);
 
-	if (m_ImageVector.empty() || m_staticImage.m_gdiImage == nullptr)
+	if (m_ImageVector.empty())
 	{
 		CRect rect = pDIS->rcItem;
 		Gdiplus::SolidBrush backgroundBrush(Gdiplus::Color(255, 255, 255));
@@ -323,25 +326,52 @@ LRESULT CMFCApplicationTSSDlg::OnDrawImage(WPARAM wParam, LPARAM lParam)
 	}
 	else
 	{
-		UINT imageWidth = m_staticImage.m_gdiImage->GetWidth();
-		UINT imageHeight = m_staticImage.m_gdiImage->GetHeight();
+		int imgIndex = m_fileList.GetNextItem(-1, LVNI_SELECTED);
+		IMAGE& selectedImage = m_ImageVector[imgIndex];
+		Gdiplus::Image* imageToDraw = nullptr;
 
-		CRect rect = pDIS->rcItem;
+		if (selectedImage.VarMode == 3)
+		{
+			imageToDraw = selectedImage.gdiImage;
+		}
+		else
+		{
+			imageToDraw = selectedImage.m_ImgVars[selectedImage.VarMode];
+			CString debugMessage;
+			debugMessage.Format(_T("Printing image: %d\nVarMode: %d"), imgIndex, selectedImage.VarMode);
+			AfxMessageBox(debugMessage);
+			return S_OK;
+		}
 
-		float scaleX = static_cast<float>(rect.Width()) / imageWidth;
-		float scaleY = static_cast<float>(rect.Height()) / imageHeight;
-		float scale = min(scaleX, scaleY);
+		if (imageToDraw == nullptr)
+		{
+			CRect rect = pDIS->rcItem;
+			Gdiplus::SolidBrush backgroundBrush(Gdiplus::Color(255, 255, 255));
+			graphics.FillRectangle(&backgroundBrush, rect.left, rect.top, rect.Width(), rect.Height());
+		}
+		else
+		{
+			// Draw the selected image
+			UINT imageWidth = imageToDraw->GetWidth();
+			UINT imageHeight = imageToDraw->GetHeight();
 
-		int scaledWidth = static_cast<int>(imageWidth * scale);
-		int scaledHeight = static_cast<int>(imageHeight * scale);
+			CRect rect = pDIS->rcItem;
 
-		int imageX = rect.left + (rect.Width() - scaledWidth) / 2;
-		int imageY = rect.top + (rect.Height() - scaledHeight) / 2;
+			float scaleX = static_cast<float>(rect.Width()) / imageWidth;
+			float scaleY = static_cast<float>(rect.Height()) / imageHeight;
+			float scale = min(scaleX, scaleY);
 
-		Gdiplus::SolidBrush backgroundBrush(Gdiplus::Color(255, 255, 255));
-		graphics.FillRectangle(&backgroundBrush, rect.left, rect.top, rect.Width(), rect.Height());
+			int scaledWidth = static_cast<int>(imageWidth * scale);
+			int scaledHeight = static_cast<int>(imageHeight * scale);
 
-		graphics.DrawImage(m_staticImage.m_gdiImage, imageX, imageY, scaledWidth, scaledHeight);
+			int imageX = rect.left + (rect.Width() - scaledWidth) / 2;
+			int imageY = rect.top + (rect.Height() - scaledHeight) / 2;
+
+			Gdiplus::SolidBrush backgroundBrush(Gdiplus::Color(255, 255, 255));
+			graphics.FillRectangle(&backgroundBrush, rect.left, rect.top, rect.Width(), rect.Height());
+
+			graphics.DrawImage(imageToDraw, imageX, imageY, scaledWidth, scaledHeight);
+		}
 	}
 
 	return S_OK;
@@ -431,14 +461,15 @@ void CMFCApplicationTSSDlg::OnLvnItemchangedFileList(NMHDR* pNMHDR, LRESULT* pRe
 			IMAGE& img = m_ImageVector[nItem];
 
 			m_staticImage.m_gdiImage = img.gdiImage;
+			CMenu* pMenu = GetMenu();
+			CMenu* pImageMenu = pMenu->GetSubMenu(2);
+			pImageMenu->CheckMenuItem(ID_IMAGE_HORIZONTAL, MF_UNCHECKED);
+			pImageMenu->CheckMenuItem(ID_IMAGE_VERTICAL, MF_UNCHECKED);
+			m_ImageVector[m_fileList.GetNextItem(-1, LVNI_SELECTED)].VarMode = 3;
 
 			m_staticImage.Invalidate();
 			m_staticImage.UpdateWindow();
 			m_staticHistogram.Invalidate();
-			if (m_histogramChecked[0] || m_histogramChecked[1] || m_histogramChecked[2])
-			{
-				
-			}
 		}
 	}
 	*pResult = 0;
@@ -567,6 +598,90 @@ void CMFCApplicationTSSDlg::OnHistogramB()
 		}
 	}
 	m_staticHistogram.Invalidate();
+}
+
+void CMFCApplicationTSSDlg::OnHorizontalF()
+{
+	CMenu* pMenu = GetMenu();
+	if (pMenu)
+	{
+		CMenu* pImageMenu = pMenu->GetSubMenu(2);
+		int imgIndex = m_fileList.GetNextItem(-1, LVNI_SELECTED);
+
+		if (imgIndex == -1)
+		{
+			AfxMessageBox(_T("Please select an image from the list to do a flip."));
+			return;
+		}
+
+		if (pImageMenu->GetMenuState(ID_IMAGE_HORIZONTAL, MF_BYCOMMAND) & MF_CHECKED) // deselect
+		{
+			pImageMenu->CheckMenuItem(ID_IMAGE_HORIZONTAL, MF_UNCHECKED);
+			if (pImageMenu->GetMenuState(ID_IMAGE_VERTICAL, MF_BYCOMMAND) & MF_CHECKED)
+			{
+				m_ImageVector[imgIndex].VarMode = 1; // vertical
+			}
+			else
+			{
+				m_ImageVector[imgIndex].VarMode = 3; // original
+			}
+		}
+		else // select
+		{
+			pImageMenu->CheckMenuItem(ID_IMAGE_HORIZONTAL, MF_CHECKED);
+			if (pImageMenu->GetMenuState(ID_IMAGE_VERTICAL, MF_BYCOMMAND) & MF_CHECKED)
+			{
+				m_ImageVector[imgIndex].VarMode = 0; // vertical + horizontal
+			}
+			else
+			{
+				m_ImageVector[imgIndex].VarMode = 2; // horizontal
+			}
+		}
+		m_staticImage.Invalidate();
+	}
+}
+
+void CMFCApplicationTSSDlg::OnVerticalF()
+{
+	CMenu* pMenu = GetMenu();
+	if (pMenu)
+	{
+		CMenu* pImageMenu = pMenu->GetSubMenu(2);
+		int imgIndex = m_fileList.GetNextItem(-1, LVNI_SELECTED);
+
+		if (imgIndex == -1)
+		{
+			AfxMessageBox(_T("Please select an image from the list to do a flip."));
+			return;
+		}
+
+		if (pImageMenu->GetMenuState(ID_IMAGE_VERTICAL, MF_BYCOMMAND) & MF_CHECKED) // deselect
+		{
+			pImageMenu->CheckMenuItem(ID_IMAGE_VERTICAL, MF_UNCHECKED);
+			if (pImageMenu->GetMenuState(ID_IMAGE_HORIZONTAL, MF_BYCOMMAND) & MF_CHECKED)
+			{
+				m_ImageVector[imgIndex].VarMode = 2; // horizontal
+			}
+			else
+			{
+				m_ImageVector[imgIndex].VarMode = 3; // original
+			}
+		}
+		else // select
+		{
+			pImageMenu->CheckMenuItem(ID_IMAGE_VERTICAL, MF_CHECKED);
+			if (pImageMenu->GetMenuState(ID_IMAGE_HORIZONTAL, MF_BYCOMMAND) & MF_CHECKED)
+			{
+				m_ImageVector[imgIndex].VarMode = 0; // vertical + horizontal
+			}
+			else
+			{
+				m_ImageVector[imgIndex].VarMode = 1; // vertical
+			}
+		}
+		m_staticImage.Invalidate();
+	}
 }
 
 void CMFCApplicationTSSDlg::CalculateHistogram(int imgIndex)

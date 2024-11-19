@@ -20,6 +20,10 @@ struct IMAGE
 	std::array<uint32_t, 256> histogramRed = { 0 };
 	std::array<uint32_t, 256> histogramGreen = { 0 };
 	std::array<uint32_t, 256> histogramBlue = { 0 };
+
+	int VarMode = 3;
+	std::array<bool, 3> m_ImgVarsCalculated = {false, false, false};
+	std::array<Gdiplus::Image*, 3> m_ImgVars;
 };
 
 enum
@@ -93,6 +97,9 @@ public:
 	afx_msg void OnHistogramR();
 	afx_msg void OnHistogramG();
 	afx_msg void OnHistogramB();
+
+	afx_msg void OnHorizontalF();
+	afx_msg void OnVerticalF();
 
 	// helper functions
 	bool IsDuplicate(const IMAGE& img) const;
