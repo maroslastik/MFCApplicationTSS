@@ -23,6 +23,7 @@ struct IMAGE
 
 	int VarMode = 3;
 	std::array<bool, 3> m_ImgVarsCalculated = {false, false, false};
+	std::array<bool, 3> m_ImgVarsRunning = { false, false, false };
 	std::array<Gdiplus::Image*, 3> m_ImgVars;
 };
 
@@ -30,7 +31,8 @@ enum
 {
 	WM_DRAW_IMAGE = WM_USER + 1,
 	WM_DRAW_HISTOGRAM, 
-	WM_HISTOGRAM_CALCULATED
+	WM_HISTOGRAM_CALCULATED,
+	WM_IMAGE_FLIP_CALCULATED
 };
 
 class CStaticImage : public CStatic
@@ -91,9 +93,14 @@ public:
 	afx_msg LRESULT OnDrawImage(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnDrawHistogram(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnHistogramCalculated(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnImageFlipped(WPARAM wParam, LPARAM lParam);
 
 	void CalculateHistogram(int imgIndex);
+	void CalculateFlip(int imgIndex, int imgVar);
 	void DrawHistogramForColor(CDC* pDC, int colorIndex);
+	void FlipHorizontal(Gdiplus::BitmapData bitmapData);
+	void FlipVertical(Gdiplus::BitmapData bitmapData);
+
 	afx_msg void OnHistogramR();
 	afx_msg void OnHistogramG();
 	afx_msg void OnHistogramB();

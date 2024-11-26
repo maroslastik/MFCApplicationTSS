@@ -72,6 +72,7 @@ BEGIN_MESSAGE_MAP(CMFCApplicationTSSDlg, CDialogEx)
 	ON_MESSAGE(WM_DRAW_IMAGE, OnDrawImage)
 	ON_MESSAGE(WM_DRAW_HISTOGRAM, OnDrawHistogram)
 	ON_MESSAGE(WM_HISTOGRAM_CALCULATED, &CMFCApplicationTSSDlg::OnHistogramCalculated)
+	ON_MESSAGE(WM_IMAGE_FLIP_CALCULATED, &CMFCApplicationTSSDlg::OnImageFlipped)
 
 	ON_COMMAND(ID_FILE_OPEN32771, &CMFCApplicationTSSDlg::OnFileOpen32771)
 	ON_COMMAND(ID_FILE_CLOSE32772, &CMFCApplicationTSSDlg::OnFileClose32772)
@@ -327,7 +328,11 @@ LRESULT CMFCApplicationTSSDlg::OnDrawImage(WPARAM wParam, LPARAM lParam)
 	else
 	{
 		int imgIndex = m_fileList.GetNextItem(-1, LVNI_SELECTED);
+		if (imgIndex < 0 && imgIndex >= m_ImageVector.size()) return S_OK;
+		
 		IMAGE& selectedImage = m_ImageVector[imgIndex];
+		if (selectedImage.VarMode < 0 && selectedImage.VarMode > 3) return S_OK;
+
 		Gdiplus::Image* imageToDraw = nullptr;
 
 		if (selectedImage.VarMode == 3)
@@ -337,10 +342,6 @@ LRESULT CMFCApplicationTSSDlg::OnDrawImage(WPARAM wParam, LPARAM lParam)
 		else
 		{
 			imageToDraw = selectedImage.m_ImgVars[selectedImage.VarMode];
-			CString debugMessage;
-			debugMessage.Format(_T("Printing image: %d\nVarMode: %d"), imgIndex, selectedImage.VarMode);
-			AfxMessageBox(debugMessage);
-			return S_OK;
 		}
 
 		if (imageToDraw == nullptr)
@@ -351,7 +352,6 @@ LRESULT CMFCApplicationTSSDlg::OnDrawImage(WPARAM wParam, LPARAM lParam)
 		}
 		else
 		{
-			// Draw the selected image
 			UINT imageWidth = imageToDraw->GetWidth();
 			UINT imageHeight = imageToDraw->GetHeight();
 
@@ -421,6 +421,12 @@ LRESULT CMFCApplicationTSSDlg::OnDrawHistogram(WPARAM wParam, LPARAM lParam)
 LRESULT CMFCApplicationTSSDlg::OnHistogramCalculated(WPARAM wParam, LPARAM lParam)
 {
 	m_staticHistogram.Invalidate(true);
+	return LRESULT();
+}
+
+LRESULT CMFCApplicationTSSDlg::OnImageFlipped(WPARAM wParam, LPARAM lParam)
+{
+	m_staticImage.Invalidate(true);
 	return LRESULT();
 }
 
@@ -524,7 +530,7 @@ void CMFCApplicationTSSDlg::OnHistogramR()
 		CMenu* pHistogramMenu = pMenu->GetSubMenu(1);
 		int imgIndex = m_fileList.GetNextItem(-1, LVNI_SELECTED);
 
-		if (imgIndex == -1)
+		if (imgIndex < 0 && imgIndex >= m_ImageVector.size())
 		{
 			AfxMessageBox(_T("Please select an image from the list to display the histogram."));
 			return;
@@ -552,7 +558,7 @@ void CMFCApplicationTSSDlg::OnHistogramG()
 		CMenu* pHistogramMenu = pMenu->GetSubMenu(1);
 		int imgIndex = m_fileList.GetNextItem(-1, LVNI_SELECTED);
 
-		if (imgIndex == -1)
+		if (imgIndex < 0 && imgIndex >= m_ImageVector.size())
 		{
 			AfxMessageBox(_T("Please select an image from the list to display the histogram."));
 			return;
@@ -580,7 +586,7 @@ void CMFCApplicationTSSDlg::OnHistogramB()
 		CMenu* pHistogramMenu = pMenu->GetSubMenu(1);
 		int imgIndex = m_fileList.GetNextItem(-1, LVNI_SELECTED);
 
-		if (imgIndex == -1)
+		if (imgIndex < 0 && imgIndex >= m_ImageVector.size())
 		{
 			AfxMessageBox(_T("Please select an image from the list to display the histogram."));
 			return;
@@ -608,7 +614,7 @@ void CMFCApplicationTSSDlg::OnHorizontalF()
 		CMenu* pImageMenu = pMenu->GetSubMenu(2);
 		int imgIndex = m_fileList.GetNextItem(-1, LVNI_SELECTED);
 
-		if (imgIndex == -1)
+		if (imgIndex < 0 && imgIndex >= m_ImageVector.size())
 		{
 			AfxMessageBox(_T("Please select an image from the list to do a flip."));
 			return;
@@ -638,6 +644,12 @@ void CMFCApplicationTSSDlg::OnHorizontalF()
 				m_ImageVector[imgIndex].VarMode = 2; // horizontal
 			}
 		}
+
+		if (!m_ImageVector[imgIndex].m_ImgVarsCalculated[m_ImageVector[imgIndex].VarMode]) // ak nie je vypocitany flip - vypocitaj ho
+		{
+			CalculateFlip(imgIndex, m_ImageVector[imgIndex].VarMode);
+		}
+		
 		m_staticImage.Invalidate();
 	}
 }
@@ -650,7 +662,7 @@ void CMFCApplicationTSSDlg::OnVerticalF()
 		CMenu* pImageMenu = pMenu->GetSubMenu(2);
 		int imgIndex = m_fileList.GetNextItem(-1, LVNI_SELECTED);
 
-		if (imgIndex == -1)
+		if (imgIndex < 0 && imgIndex >= m_ImageVector.size())
 		{
 			AfxMessageBox(_T("Please select an image from the list to do a flip."));
 			return;
@@ -680,12 +692,18 @@ void CMFCApplicationTSSDlg::OnVerticalF()
 				m_ImageVector[imgIndex].VarMode = 1; // vertical
 			}
 		}
+		
+		if (!m_ImageVector[imgIndex].m_ImgVarsCalculated[m_ImageVector[imgIndex].VarMode]) // ak nie je vypocitany flip - vypocitaj ho
+		{
+			CalculateFlip(imgIndex, m_ImageVector[imgIndex].VarMode);
+		}
 		m_staticImage.Invalidate();
 	}
 }
 
 void CMFCApplicationTSSDlg::CalculateHistogram(int imgIndex)
 {
+	if (imgIndex < 0 && imgIndex >= m_ImageVector.size()) return;
 	IMAGE& img = m_ImageVector[imgIndex];
 
 	Gdiplus::Bitmap* bitmap = static_cast<Gdiplus::Bitmap*>(img.gdiImage);
@@ -714,4 +732,83 @@ void CMFCApplicationTSSDlg::CalculateHistogram(int imgIndex)
 	}).detach();
 
 	bitmap->UnlockBits(&bitmapData);
+}
+
+void CMFCApplicationTSSDlg::CalculateFlip(int imgIndex, int imgVar)
+{
+	if (imgIndex < 0 || imgIndex >= m_ImageVector.size()) return;
+
+	IMAGE& img = m_ImageVector[imgIndex];
+	if (imgVar < 0 || imgVar >= img.m_ImgVars.size()) return;
+
+	Gdiplus::Bitmap* bitmap = static_cast<Gdiplus::Bitmap*>(img.gdiImage);
+	if (!bitmap) return;
+
+	Gdiplus::Rect rect(0, 0, bitmap->GetWidth(), bitmap->GetHeight());
+
+	switch (imgVar)
+	{
+	case 3: // No flip
+		PostMessage(WM_IMAGE_FLIP_CALCULATED, 0, 0);
+		return;
+
+	case 2: // Horizontal
+	{
+		Gdiplus::BitmapData bitmapData;
+		bitmap->LockBits(&rect, Gdiplus::ImageLockModeWrite, PixelFormat32bppARGB, &bitmapData);
+
+		img.m_ImgVarsRunning[imgVar] = true;
+
+		std::thread([this, &img, rect, imgVar, bitmapData]()
+			{
+				FlipHorizontal(bitmapData);
+				img.m_ImgVarsCalculated[imgVar] = true;
+				img.m_ImgVarsRunning[imgVar] = false;
+				PostMessage(WM_IMAGE_FLIP_CALCULATED, 0, 0);
+			}).detach();
+
+			bitmap->UnlockBits(&bitmapData);
+
+			return;
+	}
+
+	case 1: // Vertical
+	{
+
+		return;
+	}
+
+	case 0: // Horizontal + Vertical
+	{
+		if (img.m_ImgVarsCalculated[2] && !img.m_ImgVarsCalculated[1]) // Horizontal done, flip it vertically
+		{
+
+			return;
+		}
+		else if (img.m_ImgVarsCalculated[1] && !img.m_ImgVarsCalculated[2]) // Vertical done, flip it horizontally
+		{
+
+			return;
+		}
+		else
+		{
+			// If neither is calculated, do nothing or calculate both.
+			return;
+		}
+	}
+
+	default:
+		return;
+	}
+}
+
+
+void CMFCApplicationTSSDlg::FlipHorizontal(Gdiplus::BitmapData bitmapData)
+{
+	
+}
+
+void CMFCApplicationTSSDlg::FlipVertical(Gdiplus::BitmapData bitmapData)
+{
+	
 }
