@@ -331,17 +331,19 @@ LRESULT CMFCApplicationTSSDlg::OnDrawImage(WPARAM wParam, LPARAM lParam)
 		if (imgIndex < 0 && imgIndex >= m_ImageVector.size()) return S_OK;
 		
 		IMAGE& selectedImage = m_ImageVector[imgIndex];
-		if (selectedImage.VarMode < 0 && selectedImage.VarMode > 3) return S_OK;
+
+		int varMode = selectedImage.VarMode;
+		if (varMode < 0 && varMode > 3) return S_OK;
 
 		Gdiplus::Image* imageToDraw = nullptr;
 
-		if (selectedImage.VarMode == 3)
+		if (varMode == 3)
 		{
 			imageToDraw = selectedImage.gdiImage;
 		}
 		else
 		{
-			imageToDraw = selectedImage.m_ImgVars[selectedImage.VarMode];
+			imageToDraw = selectedImage.m_ImgVars[varMode];
 		}
 
 		if (imageToDraw == nullptr)
@@ -645,12 +647,24 @@ void CMFCApplicationTSSDlg::OnHorizontalF()
 			}
 		}
 
-		if (!m_ImageVector[imgIndex].m_ImgVarsCalculated[m_ImageVector[imgIndex].VarMode]) // ak nie je vypocitany flip - vypocitaj ho
+		int varMode = m_ImageVector[imgIndex].VarMode;
+
+		if (varMode < 0 && varMode > 3) return;
+
+		if (varMode == 3)
+		{
+			m_staticImage.Invalidate(true);
+			return;
+		}
+
+		if (!m_ImageVector[imgIndex].m_ImgVarsCalculated[varMode]) // ak nie je vypocitany flip - vypocitaj ho
 		{
 			CalculateFlip(imgIndex, m_ImageVector[imgIndex].VarMode);
 		}
-		
-		m_staticImage.Invalidate();
+		else
+		{
+			m_staticImage.Invalidate(true);
+		}
 	}
 }
 
@@ -692,12 +706,25 @@ void CMFCApplicationTSSDlg::OnVerticalF()
 				m_ImageVector[imgIndex].VarMode = 1; // vertical
 			}
 		}
-		
-		if (!m_ImageVector[imgIndex].m_ImgVarsCalculated[m_ImageVector[imgIndex].VarMode]) // ak nie je vypocitany flip - vypocitaj ho
+
+		int varMode = m_ImageVector[imgIndex].VarMode;
+
+		if (varMode < 0 && varMode > 3) return;
+
+		if (varMode == 3)
+		{
+			m_staticImage.Invalidate(true);
+			return;
+		}
+
+		if (!m_ImageVector[imgIndex].m_ImgVarsCalculated[varMode]) // ak nie je vypocitany flip - vypocitaj ho
 		{
 			CalculateFlip(imgIndex, m_ImageVector[imgIndex].VarMode);
 		}
-		m_staticImage.Invalidate();
+		else
+		{
+			m_staticImage.Invalidate(true);
+		}
 	}
 }
 
@@ -739,21 +766,23 @@ void CMFCApplicationTSSDlg::CalculateFlip(int imgIndex, int imgVar)
 	if (imgIndex < 0 || imgIndex >= m_ImageVector.size()) return;
 
 	IMAGE& img = m_ImageVector[imgIndex];
-	if (imgVar < 0 || imgVar >= img.m_ImgVars.size()) return;
-
-	Gdiplus::Bitmap* bitmap = static_cast<Gdiplus::Bitmap*>(img.gdiImage);
-	if (!bitmap) return;
-
-	Gdiplus::Rect rect(0, 0, bitmap->GetWidth(), bitmap->GetHeight());
+	if (imgVar < 0 || imgVar > 3) return;
 
 	switch (imgVar)
 	{
 	case 3: // No flip
+	{
 		PostMessage(WM_IMAGE_FLIP_CALCULATED, 0, 0);
 		return;
-
+	}
 	case 2: // Horizontal
 	{
+
+		Gdiplus::Bitmap* bitmap = static_cast<Gdiplus::Bitmap*>(img.gdiImage->Clone());
+		if (!bitmap) return;
+
+		Gdiplus::Rect rect(0, 0, bitmap->GetWidth(), bitmap->GetHeight());
+
 		Gdiplus::BitmapData bitmapData;
 		bitmap->LockBits(&rect, Gdiplus::ImageLockModeWrite, PixelFormat32bppARGB, &bitmapData);
 
@@ -762,53 +791,145 @@ void CMFCApplicationTSSDlg::CalculateFlip(int imgIndex, int imgVar)
 		std::thread([this, &img, rect, imgVar, bitmapData]()
 			{
 				FlipHorizontal(bitmapData);
+				PostMessage(WM_IMAGE_FLIP_CALCULATED, 0, 0);
 				img.m_ImgVarsCalculated[imgVar] = true;
 				img.m_ImgVarsRunning[imgVar] = false;
-				PostMessage(WM_IMAGE_FLIP_CALCULATED, 0, 0);
 			}).detach();
 
-			bitmap->UnlockBits(&bitmapData);
-
-			return;
+		bitmap->UnlockBits(&bitmapData);
+		img.m_ImgVars[imgVar] = bitmap;
+		return;
 	}
-
 	case 1: // Vertical
 	{
 
+		Gdiplus::Bitmap* bitmap = static_cast<Gdiplus::Bitmap*>(img.gdiImage->Clone());
+		if (!bitmap) return;
+
+		Gdiplus::Rect rect(0, 0, bitmap->GetWidth(), bitmap->GetHeight());
+
+		Gdiplus::BitmapData bitmapData;
+		bitmap->LockBits(&rect, Gdiplus::ImageLockModeWrite, PixelFormat32bppARGB, &bitmapData);
+
+		img.m_ImgVarsRunning[imgVar] = true;
+
+		std::thread([this, &img, rect, imgVar, bitmapData]()
+			{
+				FlipVertical(bitmapData);
+				PostMessage(WM_IMAGE_FLIP_CALCULATED, 0, 0);
+				img.m_ImgVarsCalculated[imgVar] = true;
+				img.m_ImgVarsRunning[imgVar] = false;
+			}).detach();
+
+		bitmap->UnlockBits(&bitmapData);
+		img.m_ImgVars[imgVar] = bitmap;
 		return;
 	}
-
 	case 0: // Horizontal + Vertical
 	{
 		if (img.m_ImgVarsCalculated[2] && !img.m_ImgVarsCalculated[1]) // Horizontal done, flip it vertically
 		{
+			Gdiplus::Bitmap* bitmap = static_cast<Gdiplus::Bitmap*>(img.m_ImgVars[2]->Clone());
+			if (!bitmap) return;
 
+			Gdiplus::Rect rect(0, 0, bitmap->GetWidth(), bitmap->GetHeight());
+
+			Gdiplus::BitmapData bitmapData;
+			bitmap->LockBits(&rect, Gdiplus::ImageLockModeWrite, PixelFormat32bppARGB, &bitmapData);
+
+			img.m_ImgVarsRunning[imgVar] = true;
+
+			std::thread([this, &img, rect, imgVar, bitmapData]()
+				{
+					FlipVertical(bitmapData);
+					PostMessage(WM_IMAGE_FLIP_CALCULATED, 0, 0);
+					img.m_ImgVarsCalculated[imgVar] = true;
+					img.m_ImgVarsRunning[imgVar] = false;
+				}).detach();
+
+			bitmap->UnlockBits(&bitmapData);
+			img.m_ImgVars[imgVar] = bitmap;
 			return;
 		}
 		else if (img.m_ImgVarsCalculated[1] && !img.m_ImgVarsCalculated[2]) // Vertical done, flip it horizontally
 		{
+			Gdiplus::Bitmap* bitmap = static_cast<Gdiplus::Bitmap*>(img.m_ImgVars[1]->Clone());
+			if (!bitmap) return;
 
-			return;
-		}
-		else
-		{
-			// If neither is calculated, do nothing or calculate both.
+			Gdiplus::Rect rect(0, 0, bitmap->GetWidth(), bitmap->GetHeight());
+
+			Gdiplus::BitmapData bitmapData;
+			bitmap->LockBits(&rect, Gdiplus::ImageLockModeWrite, PixelFormat32bppARGB, &bitmapData);
+
+			img.m_ImgVarsRunning[imgVar] = true;
+
+			std::thread([this, &img, rect, imgVar, bitmapData]()
+				{
+					FlipHorizontal(bitmapData);
+					PostMessage(WM_IMAGE_FLIP_CALCULATED, 0, 0);
+					img.m_ImgVarsCalculated[imgVar] = true;
+					img.m_ImgVarsRunning[imgVar] = false;
+				}).detach();
+
+			bitmap->UnlockBits(&bitmapData);
+			img.m_ImgVars[imgVar] = bitmap;
 			return;
 		}
 	}
-
 	default:
 		return;
 	}
 }
 
-
 void CMFCApplicationTSSDlg::FlipHorizontal(Gdiplus::BitmapData bitmapData)
 {
-	
+	int width = bitmapData.Width;
+	int height = bitmapData.Height;
+	BYTE* pixels = static_cast<BYTE*>(bitmapData.Scan0);
+	int stride = bitmapData.Stride;
+
+	int start = 0;
+	int end = height - 1;
+
+	while (start < end)
+	{
+		BYTE* rowStart = pixels + start * stride;
+		BYTE* rowEnd = pixels + end * stride;
+
+		for (int x = 0; x < width * 4; ++x)
+		{
+			std::swap(rowStart[x], rowEnd[x]);
+		}
+
+		++start;
+		--end;
+	}
 }
 
 void CMFCApplicationTSSDlg::FlipVertical(Gdiplus::BitmapData bitmapData)
 {
-	
+	int width = bitmapData.Width;
+	int height = bitmapData.Height;
+	BYTE* pixels = static_cast<BYTE*>(bitmapData.Scan0);
+	int stride = bitmapData.Stride;
+
+	for (int y = 0; y < height; ++y)
+	{
+		BYTE* row = pixels + y * stride;
+
+		int start = 0;
+		int end = (width - 1) * 4;
+
+		while (start < end)
+		{
+			for (int i = 0; i < 4; ++i)
+			{
+				std::swap(row[start + i], row[end + i]);
+			}
+
+			start += 4;
+			end -= 4;
+		}
+	}
 }
+
