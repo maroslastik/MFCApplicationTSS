@@ -933,3 +933,5 @@ void CMFCApplicationTSSDlg::FlipVertical(Gdiplus::BitmapData bitmapData)
 	}
 }
 
+// https://www.geeksforgeeks.org/program-to-reverse-the-rows-in-a-2d-array/
+// https://www.geeksforgeeks.org/program-to-reverse-columns-in-given-2d-array-matrix/
