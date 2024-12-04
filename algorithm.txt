@@ -1,0 +1,36 @@
+Zdroj algoritmov:
+https://www.geeksforgeeks.org/program-to-reverse-the-rows-in-a-2d-array/
+https://www.geeksforgeeks.org/program-to-reverse-columns-in-given-2d-array-matrix/
+
+Analýza aplikovaného grafického algoritmu
+
+Kód implementuje dve funkcie, FlipHorizontal a FlipVertical, ktoré slúžia na otočenie riadkov a stĺpcov bitmapy (2D obrázku) horizontálne a vertikálne. Algoritmus pracuje s objektom Gdiplus::BitmapData, ktorý obsahuje dáta o pixloch obrázku. Tieto dáta sú manipulované pomocou smerníkov a priameho prístupu do pamäte na výmenu hodnôt pixloch.
+
+Pracujeme s parametrami:
+	width: Šírka obrázka v pixochoch.
+	height: Výška obrázka v pixochoch.
+	pixels: Ukazovateľ na začiatok pamäťovej oblasti, kde sú uložené pixely obrázka.
+	stride: Počet bajtov na riadok obrázka.
+
+Funkcia FlipHorizontal
+
+Funkcia FlipHorizontal je navrhnutá na otočenie obrázka horizontálne - pozdĺž horizontálnej osi. 
+Tento proces sa vykonáva tak, že sa prechádza riadkami a vymieňajú sa hodnoty pixloch medzi najvyšším a najnižším riadkom, pričom sa postupuje smerom k stredu obrázka. 
+Podrobný popis krokov:
+	1. Algoritmus začína na začiatku (najvyššom riadku) a na konci (najnižšom riadku) obrázka.
+        2. V rámci cyklu sa vymieňajú pixely medzi týmito dvoma riadkami.
+        3. Po každej výmene sa ukazovatelia na riadky posúvajú smerom k stredu (zvyšuje sa index začínajúceho riadku a znižuje sa index koncového riadku).
+        4. Tento proces sa opakuje, kým sa všetky riadky neotočia.
+
+Funkcia FlipVertical
+
+Funkcia FlipVertical vykonáva vertikálne otočenie obrázka - pozdĺž vertikálnej osi. 
+Tento proces zahŕňa prechod cez jednotlivé stĺpce a výmenu hodnôt pixlov medzi ľavým a pravým stĺpcom.
+Podrobný popis krokov:
+        1. Algoritmus prechádza jednotlivé riadky (pre každý stĺpec) a v rámci každého riadku vymieňa pixely na zodpovedajúcich pozíciách zľava doprava.
+        2. Konkrétne sa vymieňajú pixely medzi začiatkom a koncom riadka, pričom sa postupne posúvajú k stredu.
+        3. Tento proces sa opakuje pre všetky riadky obrázka.
+
+Interakcia s GUI:
+V menu môže užívateľ kliknúť na Horizontal_flip a Vertical_flip jednotlivo. Označenie spustí výpočet úpravy obrázka pomocou funkcií FlipHorizontal a FlipVertical. Po ukončení výpočtu sa zobrazí otočený obrázok.
+Je možné označiť obe možnosti, kedy sa vypočíta a zobrazí obrázok otočený horizontálne aj vertikálne naraz.

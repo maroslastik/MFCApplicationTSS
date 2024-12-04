@@ -110,5 +110,4 @@ public:
 
 	// helper functions
 	bool IsDuplicate(const IMAGE& img) const;
-
 };

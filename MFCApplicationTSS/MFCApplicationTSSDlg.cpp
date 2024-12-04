@@ -343,7 +343,19 @@ LRESULT CMFCApplicationTSSDlg::OnDrawImage(WPARAM wParam, LPARAM lParam)
 		}
 		else
 		{
-			imageToDraw = selectedImage.m_ImgVars[varMode];
+			if (!selectedImage.m_ImgVarsCalculated[varMode])
+			{
+				CalculateFlip(imgIndex, m_ImageVector[imgIndex].VarMode);
+			}
+
+			if (!selectedImage.m_ImgVarsRunning[0] && !selectedImage.m_ImgVarsRunning[1] && !selectedImage.m_ImgVarsRunning[2])
+			{
+				imageToDraw = selectedImage.m_ImgVars[varMode];
+			}
+			else
+			{
+				return S_OK;
+			}
 		}
 
 		if (imageToDraw == nullptr)
@@ -742,7 +754,6 @@ void CMFCApplicationTSSDlg::CalculateHistogram(int imgIndex)
 	std::thread([this, &img, bitmap, bitmapData]()
 	{
 		img.histogramRunning = true;
-		Sleep(5000);
 		CalculateHistogramFromPixels(
 			static_cast<BYTE*>(bitmapData.Scan0),
 			bitmap->GetWidth(),
@@ -786,18 +797,22 @@ void CMFCApplicationTSSDlg::CalculateFlip(int imgIndex, int imgVar)
 		Gdiplus::BitmapData bitmapData;
 		bitmap->LockBits(&rect, Gdiplus::ImageLockModeWrite, PixelFormat32bppARGB, &bitmapData);
 
-		img.m_ImgVarsRunning[imgVar] = true;
+		if (!img.m_ImgVarsRunning[0] && !img.m_ImgVarsRunning[1] && !img.m_ImgVarsRunning[2])
+		{
+			img.m_ImgVarsRunning[imgVar] = true;
 
-		std::thread([this, &img, rect, imgVar, bitmapData]()
-			{
-				FlipHorizontal(bitmapData);
-				PostMessage(WM_IMAGE_FLIP_CALCULATED, 0, 0);
-				img.m_ImgVarsCalculated[imgVar] = true;
-				img.m_ImgVarsRunning[imgVar] = false;
-			}).detach();
+			std::thread([this, &img, rect, imgVar, bitmapData]()
+				{
+					Sleep(5000);
+					FlipHorizontal(bitmapData);
+					PostMessage(WM_IMAGE_FLIP_CALCULATED, 0, 0);
+					img.m_ImgVarsCalculated[imgVar] = true;
+					img.m_ImgVarsRunning[imgVar] = false;
+				}).detach();
 
-		bitmap->UnlockBits(&bitmapData);
-		img.m_ImgVars[imgVar] = bitmap;
+				bitmap->UnlockBits(&bitmapData);
+				img.m_ImgVars[imgVar] = bitmap;
+		}
 		return;
 	}
 	case 1: // Vertical
@@ -811,16 +826,19 @@ void CMFCApplicationTSSDlg::CalculateFlip(int imgIndex, int imgVar)
 		Gdiplus::BitmapData bitmapData;
 		bitmap->LockBits(&rect, Gdiplus::ImageLockModeWrite, PixelFormat32bppARGB, &bitmapData);
 
-		img.m_ImgVarsRunning[imgVar] = true;
+		if (!img.m_ImgVarsRunning[0] && !img.m_ImgVarsRunning[1] && !img.m_ImgVarsRunning[2])
+		{
+			img.m_ImgVarsRunning[imgVar] = true;
 
-		std::thread([this, &img, rect, imgVar, bitmapData]()
-			{
-				FlipVertical(bitmapData);
-				PostMessage(WM_IMAGE_FLIP_CALCULATED, 0, 0);
-				img.m_ImgVarsCalculated[imgVar] = true;
-				img.m_ImgVarsRunning[imgVar] = false;
-			}).detach();
-
+			std::thread([this, &img, rect, imgVar, bitmapData]()
+				{
+					Sleep(5000);
+					FlipVertical(bitmapData);
+					PostMessage(WM_IMAGE_FLIP_CALCULATED, 0, 0);
+					img.m_ImgVarsCalculated[imgVar] = true;
+					img.m_ImgVarsRunning[imgVar] = false;
+				}).detach();
+		}
 		bitmap->UnlockBits(&bitmapData);
 		img.m_ImgVars[imgVar] = bitmap;
 		return;
@@ -837,16 +855,19 @@ void CMFCApplicationTSSDlg::CalculateFlip(int imgIndex, int imgVar)
 			Gdiplus::BitmapData bitmapData;
 			bitmap->LockBits(&rect, Gdiplus::ImageLockModeWrite, PixelFormat32bppARGB, &bitmapData);
 
-			img.m_ImgVarsRunning[imgVar] = true;
+			if (!img.m_ImgVarsRunning[0] && !img.m_ImgVarsRunning[1] && !img.m_ImgVarsRunning[2])
+			{
+				img.m_ImgVarsRunning[imgVar] = true;
 
-			std::thread([this, &img, rect, imgVar, bitmapData]()
-				{
-					FlipVertical(bitmapData);
-					PostMessage(WM_IMAGE_FLIP_CALCULATED, 0, 0);
-					img.m_ImgVarsCalculated[imgVar] = true;
-					img.m_ImgVarsRunning[imgVar] = false;
-				}).detach();
-
+				std::thread([this, &img, rect, imgVar, bitmapData]()
+					{
+						Sleep(5000);
+						FlipVertical(bitmapData);
+						PostMessage(WM_IMAGE_FLIP_CALCULATED, 0, 0);
+						img.m_ImgVarsCalculated[imgVar] = true;
+						img.m_ImgVarsRunning[imgVar] = false;
+					}).detach();
+			}
 			bitmap->UnlockBits(&bitmapData);
 			img.m_ImgVars[imgVar] = bitmap;
 			return;
@@ -861,16 +882,18 @@ void CMFCApplicationTSSDlg::CalculateFlip(int imgIndex, int imgVar)
 			Gdiplus::BitmapData bitmapData;
 			bitmap->LockBits(&rect, Gdiplus::ImageLockModeWrite, PixelFormat32bppARGB, &bitmapData);
 
-			img.m_ImgVarsRunning[imgVar] = true;
-
-			std::thread([this, &img, rect, imgVar, bitmapData]()
-				{
-					FlipHorizontal(bitmapData);
-					PostMessage(WM_IMAGE_FLIP_CALCULATED, 0, 0);
-					img.m_ImgVarsCalculated[imgVar] = true;
-					img.m_ImgVarsRunning[imgVar] = false;
-				}).detach();
-
+			if (!img.m_ImgVarsRunning[0] && !img.m_ImgVarsRunning[1] && !img.m_ImgVarsRunning[2])
+			{
+				img.m_ImgVarsRunning[imgVar] = true;
+				std::thread([this, &img, rect, imgVar, bitmapData]()
+					{
+						Sleep(5000);
+						FlipHorizontal(bitmapData);
+						PostMessage(WM_IMAGE_FLIP_CALCULATED, 0, 0);
+						img.m_ImgVarsCalculated[imgVar] = true;
+						img.m_ImgVarsRunning[imgVar] = false;
+					}).detach();
+			}
 			bitmap->UnlockBits(&bitmapData);
 			img.m_ImgVars[imgVar] = bitmap;
 			return;
@@ -883,20 +906,20 @@ void CMFCApplicationTSSDlg::CalculateFlip(int imgIndex, int imgVar)
 
 void CMFCApplicationTSSDlg::FlipHorizontal(Gdiplus::BitmapData bitmapData)
 {
-	int width = bitmapData.Width;
-	int height = bitmapData.Height;
+	unsigned int width = bitmapData.Width;
+	unsigned int height = bitmapData.Height;
 	BYTE* pixels = static_cast<BYTE*>(bitmapData.Scan0);
-	int stride = bitmapData.Stride;
+	unsigned int stride = bitmapData.Stride;
 
-	int start = 0;
-	int end = height - 1;
+	unsigned int start = 0;
+	unsigned int end = height - 1;
 
 	while (start < end)
 	{
 		BYTE* rowStart = pixels + start * stride;
 		BYTE* rowEnd = pixels + end * stride;
 
-		for (int x = 0; x < width * 4; ++x)
+		for (unsigned int x = 0; x < width * 4; ++x)
 		{
 			std::swap(rowStart[x], rowEnd[x]);
 		}
@@ -908,21 +931,21 @@ void CMFCApplicationTSSDlg::FlipHorizontal(Gdiplus::BitmapData bitmapData)
 
 void CMFCApplicationTSSDlg::FlipVertical(Gdiplus::BitmapData bitmapData)
 {
-	int width = bitmapData.Width;
-	int height = bitmapData.Height;
+	unsigned int width = bitmapData.Width;
+	unsigned int height = bitmapData.Height;
 	BYTE* pixels = static_cast<BYTE*>(bitmapData.Scan0);
-	int stride = bitmapData.Stride;
+	unsigned int stride = bitmapData.Stride;
 
-	for (int y = 0; y < height; ++y)
+	for (unsigned int y = 0; y < height; ++y)
 	{
 		BYTE* row = pixels + y * stride;
 
-		int start = 0;
-		int end = (width - 1) * 4;
+		unsigned int start = 0;
+		unsigned int end = (width - 1) * 4;
 
 		while (start < end)
 		{
-			for (int i = 0; i < 4; ++i)
+			for (unsigned int i = 0; i < 4; ++i)
 			{
 				std::swap(row[start + i], row[end + i]);
 			}
@@ -932,6 +955,3 @@ void CMFCApplicationTSSDlg::FlipVertical(Gdiplus::BitmapData bitmapData)
 		}
 	}
 }
-
-// https://www.geeksforgeeks.org/program-to-reverse-the-rows-in-a-2d-array/
-// https://www.geeksforgeeks.org/program-to-reverse-columns-in-given-2d-array-matrix/
